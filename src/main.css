@@ -9,8 +9,8 @@
 
 @layer base {
   :root {
-    /* MFO Imob Design System: Fundo #F5F7FA, Primária Azul Petróleo #2C4A6E */
-    --background: 216 28% 97%;
+    /* Apex Light Design System: Fundo #f8fafc, Navy #00205b, Royal Blue #0052cc */
+    --background: 210 40% 98%; /* #f8fafc */
     --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
@@ -19,37 +19,38 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Azul Petróleo #2C4A6E -> hsl(213, 43%, 30%) */
-    --primary: 213 43% 30%;
+    /* Navy Institucional #00205b -> hsl(219, 100%, 18%) */
+    --primary: 219 100% 18%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 222 47% 11%;
+    /* Azul Royal #0052cc -> hsl(216, 100%, 40%) */
+    --secondary: 216 100% 96%;
+    --secondary-foreground: 216 100% 40%;
 
     --muted: 214 20% 94%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 213 40% 94%;
-    --accent-foreground: 213 43% 30%;
+    --accent: 216 100% 95%;
+    --accent-foreground: 216 100% 40%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 213 43% 30%;
+    --ring: 216 100% 40%;
 
     --radius: 0.75rem;
 
-    /* Sidebar escura: #1F2937 -> hsl(215, 28%, 17%) */
-    --sidebar-background: 215 28% 17%;
+    /* Sidebar Apex Navy: #00205b */
+    --sidebar-background: 219 100% 18%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 213 43% 45%;
+    --sidebar-primary: 216 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 24%;
+    --sidebar-accent: 219 80% 25%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 25% 25%;
-    --sidebar-ring: 213 43% 45%;
+    --sidebar-border: 219 60% 28%;
+    --sidebar-ring: 216 100% 40%;
 
     --chart-1: 34 100% 44%;
     --chart-2: 189 100% 38%;

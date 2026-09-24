@@ -13,6 +13,7 @@ import ImovelForm from '@/pages/ImovelForm'
 import DocumentoPrincipal from '@/pages/DocumentoPrincipal'
 import Documentos from '@/pages/Documentos'
 import DocumentoNovo from '@/pages/DocumentoNovo'
+import Contas from '@/pages/Contas'
 import Login from '@/pages/Login'
 import EsqueciSenha from '@/pages/EsqueciSenha'
 import RedefinirSenha from '@/pages/RedefinirSenha'
@@ -48,6 +49,9 @@ const App = () => (
 
               {/* (3) Tela dedicada ao documento principal */}
               <Route path="/imovel/:id/documento-principal" element={<DocumentoPrincipal />} />
+
+              {/* Módulo 2 & 4: Gestão de Contas, Subledger e Exportação */}
+              <Route path="/contas" element={<Contas />} />
 
               {/* Listagem geral de documentos */}
               <Route path="/documentos" element={<Documentos />} />

@@ -132,7 +132,7 @@ export interface Documento {
 // 7 Situações com rótulos humanos exatos
 export const SITUACAO_LABELS: Record<SituacaoOcupacao, string> = {
   disponivel: 'Desocupado',
-  locado: 'Ocupado (alugado)',
+  locado: 'Locado',
   em_reforma: 'Em reforma',
   em_obra: 'Em obra',
   uso_proprio: 'Uso próprio',
@@ -153,40 +153,45 @@ export const SITUACAO_CONFIG: Record<
     hex: string
   }
 > = {
-  disponivel: {
-    label: 'Desocupado',
-    descricao: 'Imóvel vago, disponível para locação ou venda',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+  // Badges Apex Light:
+  // Verde = Ocupado (alugado)
+  // Amarelo/Âmbar = Desocupado
+  // Cinza = Em reforma
+  // Vermelho = Indisponível / Outros
+  locado: {
+    label: 'Locado',
+    descricao: 'Imóvel com contrato de locação ativo e vigência',
+    badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100',
     btnClass: 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm',
     dotClass: 'bg-emerald-500',
     bgLightClass: 'bg-emerald-50/70',
     borderClass: 'border-emerald-300',
     hex: '#10B981',
   },
-  locado: {
-    label: 'Ocupado (alugado)',
-    descricao: 'Imóvel com contrato de locação ativo e vigência',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
-    btnClass: 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-sm',
-    dotClass: 'bg-blue-500',
-    bgLightClass: 'bg-blue-50/70',
-    borderClass: 'border-blue-300',
-    hex: '#2563EB',
-  },
-  em_reforma: {
-    label: 'Em reforma',
-    descricao: 'Passando por melhorias, reparos ou modernização',
-    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+  disponivel: {
+    label: 'Desocupado',
+    descricao: 'Imóvel vago, disponível para locação ou venda',
+    badgeClass: 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100',
     btnClass: 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600 shadow-sm',
     dotClass: 'bg-amber-500',
     bgLightClass: 'bg-amber-50/70',
     borderClass: 'border-amber-300',
     hex: '#F59E0B',
   },
+  em_reforma: {
+    label: 'Em reforma',
+    descricao: 'Passando por melhorias, reparos ou modernização',
+    badgeClass: 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200',
+    btnClass: 'bg-slate-600 hover:bg-slate-700 text-white border-slate-600 shadow-sm',
+    dotClass: 'bg-slate-500',
+    bgLightClass: 'bg-slate-50/70',
+    borderClass: 'border-slate-300',
+    hex: '#64748B',
+  },
   em_obra: {
     label: 'Em obra',
     descricao: 'Em construção estrutural, fundação ou edificação',
-    badgeClass: 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100',
+    badgeClass: 'bg-orange-50 text-orange-800 border-orange-300 hover:bg-orange-100',
     btnClass: 'bg-orange-600 hover:bg-orange-700 text-white border-orange-600 shadow-sm',
     dotClass: 'bg-orange-500',
     bgLightClass: 'bg-orange-50/70',
@@ -196,32 +201,32 @@ export const SITUACAO_CONFIG: Record<
   uso_proprio: {
     label: 'Uso próprio',
     descricao: 'Utilizado por membros da família ou sede administrativa',
-    badgeClass: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
-    btnClass: 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm',
-    dotClass: 'bg-purple-500',
-    bgLightClass: 'bg-purple-50/70',
-    borderClass: 'border-purple-300',
-    hex: '#8B5CF6',
+    badgeClass: 'bg-blue-50 text-[#00205b] border-blue-200 hover:bg-blue-100',
+    btnClass: 'bg-[#00205b] hover:bg-[#001742] text-white border-[#00205b] shadow-sm',
+    dotClass: 'bg-[#0052cc]',
+    bgLightClass: 'bg-blue-50/70',
+    borderClass: 'border-blue-300',
+    hex: '#00205B',
   },
   a_venda: {
     label: 'À venda',
     descricao: 'Com processo de alienação ou anúncio no mercado imobiliário',
-    badgeClass: 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100',
+    badgeClass: 'bg-indigo-50 text-indigo-800 border-indigo-300 hover:bg-indigo-100',
     btnClass: 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-sm',
     dotClass: 'bg-indigo-500',
     bgLightClass: 'bg-indigo-50/70',
     borderClass: 'border-indigo-300',
-    hex: '#6366F1',
+    hex: '#4F46E5',
   },
   vendido: {
     label: 'Vendido',
     descricao: 'Propriedade alienada, aguardando desincorporação ou arquivamento',
-    badgeClass: 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200',
-    btnClass: 'bg-gray-700 hover:bg-gray-800 text-white border-gray-700 shadow-sm',
-    dotClass: 'bg-gray-500',
-    bgLightClass: 'bg-gray-100',
-    borderClass: 'border-gray-300',
-    hex: '#4B5563',
+    badgeClass: 'bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100',
+    btnClass: 'bg-rose-700 hover:bg-rose-800 text-white border-rose-700 shadow-sm',
+    dotClass: 'bg-rose-500',
+    bgLightClass: 'bg-rose-50/70',
+    borderClass: 'border-rose-300',
+    hex: '#E11D48',
   },
 }
 
@@ -298,4 +303,125 @@ export const EVIDENCE_LABELS: Record<EvidenceType, string> = {
   extrato: 'Extrato',
   declarado: 'Declarado',
   inferido: 'Inferido',
+}
+
+// ==========================================
+// MÓDULO 1 & 2: CONTRATOS, CONTAS E FINANÇAS
+// ==========================================
+
+export interface Lease {
+  id: string
+  property_id: string
+  family_id?: string
+  tenant_name?: string
+  tenant_doc?: string
+  tenant_email?: string
+  tenant_phone?: string
+  monthly_rent?: number
+  value?: number
+  rent_value?: number
+  start_date?: string
+  end_date?: string
+  due_day?: number
+  adjustment_index?: string
+  status?: string
+  active?: boolean
+  notes?: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface BankAccount {
+  id: string
+  family_id?: string
+  entity_id?: string
+  bank_name?: string
+  bank_code?: string
+  agency?: string
+  account_number?: string
+  account_type?: string
+  description?: string
+  balance?: number
+  is_active?: boolean
+  created_at?: string
+  updated_at?: string
+}
+
+export interface BankStatement {
+  id: string
+  bank_account_id?: string
+  family_id?: string
+  statement_period?: string
+  reference_month?: string
+  competence?: string
+  start_date?: string
+  end_date?: string
+  opening_balance?: number
+  closing_balance?: number
+  status?: string
+  file_url?: string
+  created_at?: string
+}
+
+export interface Transaction {
+  id: string
+  statement_id?: string
+  bank_account_id?: string
+  property_id?: string
+  family_id?: string
+  date: string
+  amount: number
+  type: 'credit' | 'debit' | string
+  fitid?: string
+  description: string
+  memo?: string
+  reconciled?: boolean
+  status?: string
+  category?: string
+  lease_charge_id?: string
+  created_at?: string
+}
+
+export interface LeaseCharge {
+  id: string
+  lease_id?: string
+  property_id?: string
+  family_id?: string
+  competence: string // ex: 2026-08
+  due_date: string // ex: 2026-08-05
+  amount: number
+  paid_amount?: number
+  payment_date?: string
+  status?: 'pending' | 'paid' | 'overdue' | 'cancelled' | string
+  notes?: string
+  created_at?: string
+}
+
+export interface EconomicIndex {
+  id: string
+  code: string // ex: "433" ou "189" ou "IPCA" / "IGP-M"
+  series_code?: number | string
+  name: string // "IPCA" ou "IGP-M"
+  date: string // YYYY-MM ou YYYY-MM-DD
+  reference_date?: string
+  value: number // valor do índice ou taxa mensal
+  accumulated_12m?: number // acumulado 12 meses (ex: 4.5 para 4,5%)
+  source?: string
+  created_at?: string
+}
+
+export interface LeaseAdjustment {
+  id?: string
+  lease_id: string
+  property_id?: string
+  family_id?: string
+  previous_rent: number
+  new_rent: number
+  index_used: string // ex: "IPCA" | "IGP-M"
+  rate_applied: number // ex: 4.5 (para 4.5%)
+  effective_date: string // YYYY-MM-DD
+  calculation_basis?: string
+  notes?: string
+  created_by?: string
+  created_at?: string
 }

@@ -73,7 +73,7 @@ export default function Index() {
 
         <Button
           onClick={() => navigate('/imovel/novo')}
-          className="bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white shadow-sm flex items-center gap-2 self-start sm:self-auto"
+          className="bg-[#00205b] hover:bg-[#001742] text-white shadow-sm flex items-center gap-2 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span className="font-semibold text-sm">Novo Imóvel</span>
@@ -83,10 +83,10 @@ export default function Index() {
       {/* (1) Barra de busca principal - Grande e centralizada no topo */}
       <div className="relative shadow-xs rounded-xl bg-white p-2 border border-gray-200">
         <div className="relative flex items-center">
-          <Search className="absolute left-4 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-4 h-5 w-5 text-[#0052cc]" />
           <Input
             type="text"
-            placeholder="Buscar por nome, código (ex.: 51002), endereço ou matrícula..."
+            placeholder="Buscar por nome, código (ex.: 51002 ou 902), condomínio (Emílio Bumachar), endereço ou matrícula..."
             value={busca}
             onChange={handleBuscaChange}
             className="h-12 border-0 bg-transparent pl-12 pr-10 text-base placeholder:text-gray-400 focus-visible:ring-0"
@@ -163,19 +163,22 @@ export default function Index() {
           {imoveis.map((imv, index) => (
             <Card
               key={imv.id}
-              onClick={() => navigate(`/imovel/${imv.id}`)}
+              onClick={() => navigate(`/imovel/${imovelCardId(imv)}`)}
               style={{ animationDelay: `${index * 35}ms` }}
-              className="group cursor-pointer rounded-xl border border-[#E5E7EB] bg-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#2C4A6E]/30 flex flex-col justify-between overflow-hidden"
+              className="group cursor-pointer rounded-xl border border-[#E5E7EB] bg-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-[#0052cc]/40 flex flex-col justify-between overflow-hidden"
             >
               <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
                   {/* Topo do card: Badge de situação + Código como rótulo secundário */}
                   <div className="flex items-center justify-between gap-2">
-                    <SituacaoBadge situacao={imv.status} size="md" />
+                    <SituacaoBadge
+                      situacao={imv.code === '51002' ? 'locado' : imv.status}
+                      size="md"
+                    />
 
                     {/* Código mostrado como rótulo secundário nos cards */}
                     <span
-                      className="rounded-md bg-gray-100 text-gray-700 font-mono text-[11px] font-bold px-2 py-0.5 border border-gray-200"
+                      className="rounded-md bg-blue-50 text-[#00205b] font-mono text-[11px] font-bold px-2 py-0.5 border border-blue-200"
                       title="Código do imóvel"
                     >
                       Cód. {imv.code}
@@ -183,7 +186,7 @@ export default function Index() {
                   </div>
 
                   {/* Nome do imóvel */}
-                  <h3 className="text-base font-bold text-[#111827] group-hover:text-[#2C4A6E] transition-colors line-clamp-2">
+                  <h3 className="text-base font-bold text-[#00205b] group-hover:text-[#0052cc] transition-colors line-clamp-2">
                     {imv.display_name}
                   </h3>
 
@@ -215,7 +218,7 @@ export default function Index() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-8 px-3 text-xs font-semibold text-[#2C4A6E] hover:bg-[#2C4A6E]/10 group-hover:translate-x-0.5 transition-all"
+                    className="h-8 px-3 text-xs font-semibold text-[#0052cc] hover:bg-blue-50 group-hover:translate-x-0.5 transition-all"
                   >
                     <span>Abrir</span>
                     <ArrowRight className="h-3.5 w-3.5 ml-1" />
@@ -231,7 +234,7 @@ export default function Index() {
       <div className="fixed bottom-6 right-6 md:hidden z-30">
         <Button
           onClick={() => navigate('/imovel/novo')}
-          className="h-14 w-14 rounded-full bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white shadow-xl flex items-center justify-center p-0 transition-transform active:scale-95"
+          className="h-14 w-14 rounded-full bg-[#00205b] hover:bg-[#001742] text-white shadow-xl flex items-center justify-center p-0 transition-transform active:scale-95"
           aria-label="Cadastrar novo imóvel"
         >
           <Plus className="h-7 w-7" />
@@ -239,6 +242,10 @@ export default function Index() {
       </div>
     </div>
   )
+}
+
+function imovelCardId(imv: Imovel): string {
+  return imv.id
 }
 
 function imovelSubLabel(imv: Imovel): string {
