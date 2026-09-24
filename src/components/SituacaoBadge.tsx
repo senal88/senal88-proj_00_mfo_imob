@@ -16,7 +16,7 @@ export const SituacaoBadge: React.FC<SituacaoBadgeProps> = ({
   showDot = true,
   size = 'md',
 }) => {
-  const config = SITUACAO_CONFIG[situacao] || SITUACAO_CONFIG.desocupado
+  const config = SITUACAO_CONFIG[situacao] || SITUACAO_CONFIG.disponivel
 
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5 gap-1.5',

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Search, Plus, MapPin, Building, FileText, ArrowRight, XCircle } from 'lucide-react'
-import { Imovel } from '@/types/imob'
+import { Search, Plus, MapPin, Building, ArrowRight, XCircle } from 'lucide-react'
+import { Imovel, TIPO_IMOVEL_LABELS } from '@/types/imob'
 import { listarImoveis } from '@/lib/imobDb'
 import { useAuth } from '@/contexts/AuthContext'
 import { SituacaoBadge } from '@/components/SituacaoBadge'
@@ -66,8 +66,8 @@ export default function Index() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[#111827]">Imóveis da Família</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Gestão patrimonial simplificada • {imoveis.length}{' '}
-            {imoveis.length === 1 ? 'imóvel cadastrado' : 'imóveis cadastrados'}
+            Gestão patrimonial simplificada • {usuario?.familia_nome || 'Família Oliveira'} •{' '}
+            {imoveis.length} {imoveis.length === 1 ? 'imóvel catalogado' : 'imóveis catalogados'}
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function Index() {
           <Search className="absolute left-4 h-5 w-5 text-gray-400" />
           <Input
             type="text"
-            placeholder="Buscar imóvel pelo nome ou endereço..."
+            placeholder="Buscar por nome, código (ex.: 51002), endereço ou matrícula..."
             value={busca}
             onChange={handleBuscaChange}
             className="h-12 border-0 bg-transparent pl-12 pr-10 text-base placeholder:text-gray-400 focus-visible:ring-0"
@@ -110,7 +110,7 @@ export default function Index() {
           {[1, 2, 3].map((n) => (
             <div
               key={n}
-              className="h-48 rounded-xl border border-gray-200 bg-white p-5 animate-pulse flex flex-col justify-between"
+              className="h-52 rounded-xl border border-gray-200 bg-white p-5 animate-pulse flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="h-5 bg-gray-200 rounded w-3/4" />
@@ -128,12 +128,12 @@ export default function Index() {
           </div>
           <h3 className="text-lg font-semibold text-gray-900">
             {busca
-              ? 'Nenhum imóvel encontrado com esse nome'
+              ? 'Nenhum imóvel encontrado com esse termo'
               : 'Nenhum imóvel cadastrado para esta família'}
           </h3>
           <p className="mt-1 text-sm text-gray-500 max-w-md">
             {busca
-              ? `Não localizamos nenhum imóvel com o termo "${busca}". Verifique a digitação ou limpe o filtro.`
+              ? `Não localizamos nenhum imóvel com o termo "${busca}". Verifique a digitação ou limpe a busca.`
               : 'Comece adicionando o primeiro patrimônio imobiliário para gerenciar a ocupação e vincular documentos.'}
           </p>
 
@@ -169,36 +169,48 @@ export default function Index() {
             >
               <CardContent className="p-5 flex-1 flex flex-col justify-between space-y-4">
                 <div className="space-y-3">
-                  {/* Badge de ocupação no topo do card */}
+                  {/* Topo do card: Badge de situação + Código como rótulo secundário */}
                   <div className="flex items-center justify-between gap-2">
-                    <SituacaoBadge situacao={imv.situacao} size="md" />
-                    {imv.documento_principal_id && (
-                      <span
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#2C4A6E] bg-blue-50/80 px-2 py-0.5 rounded-md"
-                        title="Possui documento principal anexado"
-                      >
-                        <FileText className="h-3 w-3" />
-                        <span>Doc. principal</span>
-                      </span>
-                    )}
+                    <SituacaoBadge situacao={imv.status} size="md" />
+
+                    {/* Código mostrado como rótulo secundário nos cards */}
+                    <span
+                      className="rounded-md bg-gray-100 text-gray-700 font-mono text-[11px] font-bold px-2 py-0.5 border border-gray-200"
+                      title="Código do imóvel"
+                    >
+                      Cód. {imv.code}
+                    </span>
                   </div>
 
                   {/* Nome do imóvel */}
                   <h3 className="text-base font-bold text-[#111827] group-hover:text-[#2C4A6E] transition-colors line-clamp-2">
-                    {imv.nome}
+                    {imv.display_name}
                   </h3>
 
-                  {/* Endereço resumido */}
-                  <p className="flex items-start gap-1.5 text-xs text-gray-500 leading-relaxed line-clamp-2">
-                    <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400 mt-0.5" />
-                    <span>{imv.endereco}</span>
-                  </p>
+                  {/* Endereço resumido e tipo */}
+                  <div className="space-y-1 text-xs text-gray-500">
+                    <div className="flex items-center gap-1.5 font-medium text-gray-700">
+                      <span>{TIPO_IMOVEL_LABELS[imv.kind]}</span>
+                      {imv.unit && <span>• Unidade {imv.unit}</span>}
+                    </div>
+
+                    {imv.address && (
+                      <p className="flex items-start gap-1.5 text-gray-500 leading-relaxed line-clamp-2">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-gray-400 mt-0.5" />
+                        <span>
+                          {imv.address}
+                          {imv.city ? `, ${imv.city}` : ''}
+                          {imv.state ? ` - ${imv.state}` : ''}
+                        </span>
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Rodapé do Card com Ação "Abrir" */}
-                <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 truncate max-w-[150px]">
-                    {imv.matricula ? `Matrícula: ${imv.matricula}` : 'Sem matrícula inf.'}
+                <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
+                  <span className="truncate max-w-[140px]" title={imovelSubLabel(imv)}>
+                    {imovelSubLabel(imv)}
                   </span>
                   <Button
                     size="sm"
@@ -227,4 +239,11 @@ export default function Index() {
       </div>
     </div>
   )
+}
+
+function imovelSubLabel(imv: Imovel): string {
+  if (imv.registry_number) return `Matrícula: ${imv.registry_number}`
+  if (imv.iptu_number) return `IPTU: ${imv.iptu_number}`
+  if (imv.entity_name) return imv.entity_name
+  return 'Sem matrícula inf.'
 }

@@ -8,15 +8,19 @@ import {
   Trash2,
   AlertCircle,
   Building,
-  CheckCircle2,
+  Calendar,
+  Shield,
+  Layers,
+  Clock,
 } from 'lucide-react'
-import { Imovel, Documento, TIPO_DOCUMENTO_LABELS } from '@/types/imob'
 import {
-  obterImovelPorId,
-  obterDocumentoPrincipal,
-  desvincularDocumentoPrincipal,
-  removerDocumento,
-} from '@/lib/imobDb'
+  Imovel,
+  Documento,
+  TIPO_DOCUMENTO_LABELS,
+  REVIEW_STATUS_LABELS,
+  EVIDENCE_LABELS,
+} from '@/types/imob'
+import { obterImovelPorId, obterDocumentoPrincipal, removerDocumento } from '@/lib/imobDb'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,6 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 export default function DocumentoPrincipal() {
   const { id } = useParams<{ id: string }>()
@@ -39,6 +44,7 @@ export default function DocumentoPrincipal() {
 
   const [imovel, setImovel] = useState<Imovel | null>(null)
   const [documento, setDocumento] = useState<Documento | null>(null)
+  const [versoesAnteriores, setVersoesAnteriores] = useState<Documento[]>([])
   const [loading, setLoading] = useState(true)
 
   const [dialogRemoverOpen, setDialogRemoverOpen] = useState(false)
@@ -51,8 +57,9 @@ export default function DocumentoPrincipal() {
       const imv = await obterImovelPorId(id, usuario?.familia_id)
       setImovel(imv)
       if (imv) {
-        const doc = await obterDocumentoPrincipal(id, usuario?.familia_id)
-        setDocumento(doc)
+        const resultado = await obterDocumentoPrincipal(id, usuario?.familia_id)
+        setDocumento(resultado.documento)
+        setVersoesAnteriores(resultado.versoesAnteriores)
       }
     } finally {
       setLoading(false)
@@ -63,15 +70,15 @@ export default function DocumentoPrincipal() {
     carregar()
   }, [carregar])
 
-  const handleRemoverVinculo = async () => {
-    if (!imovel || !documento) return
+  const handleRemover = async () => {
+    if (!documento) return
     setRemovendo(true)
     try {
-      await desvincularDocumentoPrincipal(imovel.id, usuario?.familia_id)
-      toast.success('Vínculo de documento principal removido com sucesso.')
-      navigate(`/imovel/${imovel.id}`)
+      await removerDocumento(documento.id, usuario?.familia_id)
+      toast.success('Documento removido com sucesso.')
+      navigate(`/imovel/${id}`)
     } catch {
-      toast.error('Erro ao desvincular o documento principal.')
+      toast.error('Erro ao remover o documento.')
     } finally {
       setRemovendo(false)
       setDialogRemoverOpen(false)
@@ -102,28 +109,32 @@ export default function DocumentoPrincipal() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
+    <div className="max-w-3xl mx-auto space-y-6 pb-16">
       {/* Voltar ao imóvel */}
       <button
         onClick={() => navigate(`/imovel/${imovel.id}`)}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 hover:text-[#2C4A6E] transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Voltar para {imovel.nome}</span>
+        <span>Voltar para {imovel.display_name}</span>
       </button>
 
-      {/* Cartão Informativo do Documento Principal */}
+      {/* Cartão Informativo do Documento Principal Derivado */}
       <Card className="border border-gray-200 shadow-sm bg-white rounded-2xl overflow-hidden">
         <div className="bg-[#2C4A6E] p-6 text-white">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-white/10">
-              <Building className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-white/10 text-white">
+              <Building className="h-6 w-6" />
             </div>
             <div>
-              <span className="text-xs uppercase tracking-wider text-blue-200 font-semibold">
-                Documento Principal do Imóvel
+              <span className="text-xs uppercase tracking-wider text-blue-200 font-bold">
+                Documento Principal Derivado por Prioridade Legal
               </span>
-              <h2 className="text-xl font-bold text-white leading-tight">{imovel.nome}</h2>
+              <h2 className="text-xl font-bold text-white leading-tight">{imovel.display_name}</h2>
+              <p className="text-xs text-blue-100 mt-0.5">
+                Código: {imovel.code} • Prioridade: Matrícula → Escritura → Contrato de locação →
+                Espelho IPTU → Outros
+              </p>
             </div>
           </div>
         </div>
@@ -131,122 +142,200 @@ export default function DocumentoPrincipal() {
         <CardContent className="p-6 sm:p-8 space-y-6">
           {documento ? (
             <div className="space-y-6">
-              {/* Box de Pré-visualização / Informação do Arquivo */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border border-gray-200 bg-gray-50">
+              {/* Box de Informações do Arquivo no Paperless */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 rounded-xl border border-gray-200 bg-gray-50/70">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white border border-gray-200 text-[#2C4A6E] shadow-xs">
                   <FileText className="h-8 w-8" />
                 </div>
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-bold text-gray-900 break-words">
-                      {documento.nome}
+                      {documento.title}
                     </h3>
+                    <span className="rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5">
+                      Principal Ativo
+                    </span>
+                    {documento.review_status && (
+                      <span
+                        className={cn(
+                          'rounded-full text-[10px] font-bold px-2 py-0.5',
+                          documento.review_status === 'conferido'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800',
+                        )}
+                      >
+                        {REVIEW_STATUS_LABELS[documento.review_status]}
+                      </span>
+                    )}
+                    {documento.sensitive && (
+                      <span className="rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 inline-flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        Sensível
+                      </span>
+                    )}
                   </div>
+
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                     <span className="font-semibold text-gray-700">
-                      Tipo: {TIPO_DOCUMENTO_LABELS[documento.tipo]}
+                      Tipo: {TIPO_DOCUMENTO_LABELS[documento.doc_type]}
                     </span>
                     <span>•</span>
-                    <span>Tamanho: {documento.tamanho_formatado}</span>
-                    {documento.data_documento && (
+                    <span>Tamanho: {documento.file_size_formatted}</span>
+                    {documento.document_date && (
                       <>
                         <span>•</span>
-                        <span>Data do arquivo: {documento.data_documento}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          Data: {documento.document_date}
+                        </span>
+                      </>
+                    )}
+                    {documento.valid_until && (
+                      <>
+                        <span>•</span>
+                        <span className="text-amber-700 font-medium">
+                          Validade: {documento.valid_until}
+                        </span>
                       </>
                     )}
                   </div>
-                  {documento.descricao && (
-                    <p className="text-xs text-gray-600 mt-2 bg-white p-2.5 rounded-lg border border-gray-200">
-                      {documento.descricao}
-                    </p>
+
+                  {documento.evidence && (
+                    <div className="text-xs text-gray-600">
+                      <span className="font-medium">Evidência:</span>{' '}
+                      {EVIDENCE_LABELS[documento.evidence]}
+                    </div>
                   )}
+
+                  <div className="text-[11px] text-gray-400 font-mono pt-1">
+                    Paperless ID: #{documento.paperless_id || '---'} • Hash:{' '}
+                    {documento.sha256 ? `${documento.sha256.substring(0, 16)}...` : '---'}
+                  </div>
                 </div>
               </div>
 
               {/* Ações Disponíveis */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                {/* Botão "Abrir documento" (URL pública de storage do Supabase) */}
+                {/* Botão "Abrir documento" = link do Paperless */}
                 <a
-                  href={documento.url}
+                  href={documento.file_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white py-3 px-4 font-semibold text-sm shadow-xs transition-colors"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  <span>Abrir documento em nova aba</span>
+                  <span>Abrir documento no Paperless</span>
                 </a>
 
-                {/* Botão "Substituir documento principal" */}
+                {/* Botão "Substituir documento" com supersedes_id */}
                 <Button
                   onClick={() =>
                     navigate(
-                      `/documento/novo?imovelId=${imovel.id}&isPrincipal=true&substituirDocId=${documento.id}`,
+                      `/documento/novo?imovelId=${imovel.id}&substituirDocId=${documento.id}&tipoPre=${documento.doc_type}`,
                     )
                   }
                   variant="outline"
                   className="rounded-xl border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
                 >
                   <RefreshCw className="h-4 w-4 mr-2 text-gray-500" />
-                  <span>Substituir documento</span>
+                  <span>Substituir versão</span>
                 </Button>
 
-                {/* Botão "Remover documento principal" */}
+                {/* Excluir metadado */}
                 <Button
                   onClick={() => setDialogRemoverOpen(true)}
                   variant="ghost"
                   className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 py-3"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  <span>Desvincular</span>
+                  <span>Excluir</span>
                 </Button>
               </div>
+
+              {/* Versões Anteriores Preservadas */}
+              {versoesAnteriores.length > 0 && (
+                <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3 mt-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-700">
+                    <Layers className="h-4 w-4 text-[#2C4A6E]" />
+                    <span>Versões Anteriores Catalogadas ({versoesAnteriores.length})</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500">
+                    O sistema mantém o rastreamento histórico de cada substituição através de
+                    supersedes_id sem excluir as versões antigas.
+                  </p>
+                  <div className="divide-y divide-gray-200">
+                    {versoesAnteriores.map((v) => (
+                      <div
+                        key={v.id}
+                        className="py-2.5 flex items-center justify-between text-xs gap-3"
+                      >
+                        <div>
+                          <span className="font-semibold text-gray-900 block truncate">
+                            {v.title}
+                          </span>
+                          <span className="text-[11px] text-gray-500">
+                            Data: {v.document_date || '---'} • {v.file_size_formatted} • Ref: #
+                            {v.paperless_id}
+                          </span>
+                        </div>
+                        <a
+                          href={v.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2C4A6E] hover:underline shrink-0"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          <span>Ver no Paperless</span>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
-            /* Não há documento principal cadastrado */
             <div className="text-center py-8 space-y-4">
               <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mx-auto">
                 <FileText className="h-8 w-8" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-gray-900">
-                  Nenhum documento principal vinculado
+                  Nenhum documento principal disponível
                 </h3>
                 <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
-                  Este imóvel ainda não possui um documento principal definido. Você pode adicionar
-                  a escritura ou registro agora mesmo.
+                  Vincule a certidão de matrícula ou escritura lavrada em cartório. O sistema a
+                  reconhecerá automaticamente como documento principal.
                 </p>
               </div>
               <Button
-                onClick={() => navigate(`/documento/novo?imovelId=${imovel.id}&isPrincipal=true`)}
+                onClick={() => navigate(`/documento/novo?imovelId=${imovel.id}&tipoPre=matricula`)}
                 className="bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white"
               >
-                Vincular documento principal
+                Vincular Matrícula
               </Button>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Confirmação de Remoção */}
+      {/* Confirmação de Exclusão */}
       <AlertDialog open={dialogRemoverOpen} onOpenChange={setDialogRemoverOpen}>
         <AlertDialogContent className="bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-gray-900">
-              Desvincular documento principal?
-            </AlertDialogTitle>
+            <AlertDialogTitle className="text-gray-900">Excluir este documento?</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-600">
-              O documento deixará de ser o documento de destaque deste imóvel. O arquivo ainda
-              permanecerá salvo na lista de documentos caso você queira acessá-lo.
+              O registro deste documento será removido do sistema. Esta ação não poderá ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-gray-200">Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleRemoverVinculo}
+              onClick={handleRemover}
               disabled={removendo}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              {removendo ? 'Desvinculando...' : 'Confirmar desvinculação'}
+              {removendo ? 'Excluindo...' : 'Confirmar exclusão'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
