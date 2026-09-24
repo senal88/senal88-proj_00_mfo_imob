@@ -12,8 +12,8 @@ export default function Login() {
   const navigate = useNavigate()
   const { login, isLoading } = useAuth()
 
-  const [email, setEmail] = useState('operacao@mfo.com.br')
-  const [senha, setSenha] = useState('••••••••')
+  const [email, setEmail] = useState('')
+  const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -38,8 +38,9 @@ export default function Login() {
       } else {
         setErro('Credenciais inválidas. Verifique seu e-mail e senha.')
       }
-    } catch {
-      setErro('Erro de conexão com o Supabase. Tente novamente.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro de conexão com o Supabase.'
+      setErro(msg || 'Erro de conexão com o Supabase. Tente novamente.')
     }
   }
 
@@ -62,7 +63,8 @@ export default function Login() {
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-lg font-bold text-gray-900">Acesso Restrito</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Digite suas credenciais corporativas para visualizar os imóveis da família
+              Digite suas credenciais do Supabase para visualizar os imóveis da família com
+              isolamento RLS
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -82,7 +84,7 @@ export default function Login() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="operacao@mfo.com.br"
+                    placeholder="seu.email@mfotrust.com"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value)
@@ -129,19 +131,18 @@ export default function Login() {
                 className="w-full h-11 bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white font-semibold text-sm shadow-xs mt-2"
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                {isLoading ? 'Autenticando...' : 'Entrar no Sistema'}
+                {isLoading ? 'Autenticando no Supabase...' : 'Entrar no Sistema'}
               </Button>
             </form>
 
-            {/* Credenciais para demonstração rápida */}
             <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50/80 p-3 text-xs space-y-1 text-gray-600">
               <div className="flex items-center gap-1.5 text-gray-800 font-semibold text-[11px]">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Isolamento RLS por Família:</span>
+                <span>Autenticação Supabase Self-Hosted (RLS)</span>
               </div>
               <p className="text-[11px] text-gray-500">
-                • <strong>operacao@mfo.com.br</strong>: Família Oliveira (5 imóveis)
-                <br />• <strong>gestor@mfo.com.br</strong>: Família Bragança (1 imóvel)
+                Acesso por usuário autenticado. O banco de dados isola automaticamente os imóveis e
+                documentos conforme as políticas RLS da família.
               </p>
             </div>
           </CardContent>

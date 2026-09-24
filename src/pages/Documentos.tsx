@@ -87,7 +87,7 @@ export default function Documentos() {
             Documentos dos Imóveis
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Dossiê digital via Paperless • {usuario?.familia_nome || 'Família Oliveira'} •{' '}
+            Dossiê digital via Paperless • {usuario?.familia_nome || 'Família BNI'} •{' '}
             {documentos.length}{' '}
             {documentos.length === 1 ? 'arquivo catalogado' : 'arquivos catalogados'}
           </p>

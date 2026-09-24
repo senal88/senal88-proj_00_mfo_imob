@@ -1,23 +1,38 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Usuario } from '@/types/imob'
-import { getStoredUser, setStoredUser } from '@/lib/imobDb'
-import { USUARIOS_INICIAIS } from '@/lib/mockData'
+import { getStoredUser, setStoredUser, resolverUsuarioLogado } from '@/lib/imobDb'
+import {
+  supabaseSignIn,
+  supabaseSignOut,
+  getStoredSession,
+  getSupabaseConfig,
+} from '@/lib/supabaseClient'
 
 interface AuthContextType {
   usuario: Usuario | null
   isLoading: boolean
   login: (email: string, senha?: string) => Promise<boolean>
   logout: () => void
-  trocarFamiliaTeste: (familiaId: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [usuario, setUsuario] = useState<Usuario | null>(
-    () => getStoredUser() || USUARIOS_INICIAIS[0],
-  )
+  const [usuario, setUsuario] = useState<Usuario | null>(() => getStoredUser())
   const [isLoading, setIsLoading] = useState(false)
+
+  // Ao montar, sincroniza se já houver sessão salva
+  useEffect(() => {
+    const session = getStoredSession()
+    if (session && !usuario) {
+      resolverUsuarioLogado(session)
+        .then((u) => setUsuario(u))
+        .catch(() => {
+          // Mantém o armazenado localmente caso a chamada de rede falhe
+          setUsuario(getStoredUser())
+        })
+    }
+  }, [usuario])
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -27,53 +42,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('mfo_auth_changed', handleAuthChange)
   }, [])
 
-  const login = async (email: string): Promise<boolean> => {
+  const login = async (email: string, senha?: string): Promise<boolean> => {
     setIsLoading(true)
-    await new Promise((r) => setTimeout(r, 400)) // Simulação de handshake seguro
+    const cfg = getSupabaseConfig()
 
-    // Localiza usuário cadastrado ou cria perfil de equipe da família
-    const encontrado = USUARIOS_INICIAIS.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase().trim(),
-    )
+    try {
+      if (cfg.url && senha) {
+        // Autentica diretamente no Supabase self-hosted
+        const session = await supabaseSignIn(email.trim(), senha)
+        const user = await resolverUsuarioLogado(session)
+        setUsuario(user)
+        setIsLoading(false)
+        return true
+      }
 
-    if (encontrado) {
-      setStoredUser(encontrado)
-      setUsuario(encontrado)
+      // Se VITE_SUPABASE_URL não estiver configurada no preview, usa operador admin BNI
+      const fallbackUser: Usuario = {
+        id: 'usr-bni-admin',
+        nome: email
+          .split('@')[0]
+          .replace(/[._]/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase()),
+        email: email.trim(),
+        cargo: 'Administrador Family Office',
+        familia_id: 'fam-bni',
+        familia_nome: 'Família BNI',
+      }
+      setStoredUser(fallbackUser)
+      setUsuario(fallbackUser)
       setIsLoading(false)
       return true
+    } catch (err) {
+      setIsLoading(false)
+      throw err
     }
-
-    // Se digitou outro e-mail válido, autentica no family office Oliveira como padrão
-    const novoUsuario: Usuario = {
-      id: 'usr-' + Date.now().toString(36),
-      nome: email
-        .split('@')[0]
-        .replace('.', ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase()),
-      email: email.trim(),
-      cargo: 'Operação Family Office',
-      familia_id: 'fam-oliveira',
-      familia_nome: 'Família Oliveira & Associados',
-      avatar_url: 'https://img.usecurling.com/ppl/medium?gender=female&seed=15',
-    }
-
-    setStoredUser(novoUsuario)
-    setUsuario(novoUsuario)
-    setIsLoading(false)
-    return true
   }
 
   const logout = () => {
+    supabaseSignOut()
     setStoredUser(null)
     setUsuario(null)
-  }
-
-  const trocarFamiliaTeste = (familiaId: string) => {
-    const target = USUARIOS_INICIAIS.find((u) => u.familia_id === familiaId)
-    if (target) {
-      setStoredUser(target)
-      setUsuario(target)
-    }
   }
 
   return (
@@ -83,7 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         login,
         logout,
-        trocarFamiliaTeste,
       }}
     >
       {children}

@@ -251,7 +251,7 @@ export default function ImovelDetalhes() {
               className="font-semibold text-gray-900 mt-0.5 block truncate"
               title={imovel.entity_name}
             >
-              {imovel.entity_name || 'BNI Participações'}
+              {imovel.entity_name || 'Entidade Titular'}
             </span>
           </div>
 

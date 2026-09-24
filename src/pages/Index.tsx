@@ -66,7 +66,7 @@ export default function Index() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[#111827]">Imóveis da Família</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Gestão patrimonial simplificada • {usuario?.familia_nome || 'Família Oliveira'} •{' '}
+            Gestão patrimonial simplificada • {usuario?.familia_nome || 'Família BNI'} •{' '}
             {imoveis.length} {imoveis.length === 1 ? 'imóvel catalogado' : 'imóveis catalogados'}
           </p>
         </div>

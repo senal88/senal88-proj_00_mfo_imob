@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
 export default function Layout() {
-  const { usuario, logout, trocarFamiliaTeste } = useAuth()
+  const { usuario, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -117,26 +117,13 @@ export default function Layout() {
         <div className="mx-4 mt-4 rounded-lg bg-gray-800/90 p-3 border border-gray-700 text-xs">
           <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-1">
             <ShieldCheck className="h-4 w-4" />
-            <span>RLS Ativo • Isolamento</span>
+            <span>RLS Supabase • Isolamento</span>
           </div>
-          <p className="text-gray-300 font-medium truncate" title={usuario?.familia_nome}>
-            {usuario?.familia_nome || 'Família Oliveira'}
+          <p className="text-gray-200 font-medium truncate" title={usuario?.familia_nome}>
+            {usuario?.familia_nome || 'Família BNI'}
           </p>
-          <div className="mt-2 flex items-center justify-between pt-1 border-t border-gray-700/60 text-[11px] text-gray-400">
-            <span>Alternar família:</span>
-            <button
-              onClick={() => {
-                if (usuario?.familia_id === 'fam-oliveira') {
-                  trocarFamiliaTeste('fam-braganca')
-                } else {
-                  trocarFamiliaTeste('fam-oliveira')
-                }
-              }}
-              className="text-[#60A5FA] hover:underline font-medium"
-              title="Trocar família para validar o isolamento por RLS"
-            >
-              {usuario?.familia_id === 'fam-oliveira' ? 'Ver Bragança' : 'Ver Oliveira'}
-            </button>
+          <div className="mt-1 text-[11px] text-gray-400 truncate">
+            {usuario?.email || 'Conectado'}
           </div>
         </div>
 
@@ -202,11 +189,9 @@ export default function Layout() {
               </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-white">
-                  {usuario?.nome || 'Operação'}
+                  {usuario?.nome || 'Operador'}
                 </p>
-                <p className="truncate text-[11px] text-gray-400">
-                  {usuario?.email || 'operacao@mfo.com.br'}
-                </p>
+                <p className="truncate text-[11px] text-gray-400">{usuario?.email || ''}</p>
               </div>
             </div>
 

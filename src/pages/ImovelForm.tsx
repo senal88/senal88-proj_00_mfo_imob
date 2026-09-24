@@ -47,7 +47,7 @@ export default function ImovelForm() {
   const [entidades, setEntidades] = useState<EntidadeProprietaria[]>([])
   const [entityId, setEntityId] = useState('')
   const [displayName, setDisplayName] = useState('')
-  const [code, setCode] = useState(isEditing ? '' : '51002')
+  const [code, setCode] = useState(isEditing ? '' : '')
   const [kind, setKind] = useState<TipoImovel>('apartamento')
   const [unit, setUnit] = useState('')
   const [address, setAddress] = useState('')
@@ -287,7 +287,7 @@ export default function ImovelForm() {
                   </Label>
                   <Input
                     id="display_name"
-                    placeholder="Ex.: Edifício Boulevard Jardins - Conjunto 1402"
+                    placeholder="Ex.: Ed. Emílio Bumachar · Apto 902"
                     value={displayName}
                     onChange={(e) => {
                       setDisplayName(e.target.value)
@@ -371,11 +371,11 @@ export default function ImovelForm() {
                 </Label>
                 <Input
                   id="address"
-                  placeholder="Ex.: Alameda Lorena, 1420, Jardins"
+                  placeholder="Ex.: Rua / Avenida, Número, Bairro"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
-                />
+                />{' '}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -385,7 +385,7 @@ export default function ImovelForm() {
                   </Label>
                   <Input
                     id="city"
-                    placeholder="Ex.: São Paulo"
+                    placeholder="Ex.: Vitória"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
@@ -398,7 +398,7 @@ export default function ImovelForm() {
                   </Label>
                   <Input
                     id="state"
-                    placeholder="SP"
+                    placeholder="ES"
                     maxLength={2}
                     value={state}
                     onChange={(e) => setState(e.target.value.toUpperCase())}
@@ -434,7 +434,7 @@ export default function ImovelForm() {
                   </Label>
                   <Input
                     id="registry_office"
-                    placeholder="Ex.: 4º CRI de São Paulo"
+                    placeholder="Ex.: 1º Cartório de Registro Geral de Imóveis"
                     value={registryOffice}
                     onChange={(e) => setRegistryOffice(e.target.value)}
                     className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"

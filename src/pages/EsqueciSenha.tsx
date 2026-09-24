@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { supabaseResetPassword } from '@/lib/supabaseClient'
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState('')
@@ -20,10 +21,16 @@ export default function EsqueciSenha() {
     }
 
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setLoading(false)
-    setEnviado(true)
-    toast.success('Link de recuperação enviado com sucesso!')
+    try {
+      await supabaseResetPassword(email.trim())
+      setEnviado(true)
+      toast.success('Link de recuperação enviado com sucesso!')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao solicitar recuperação de senha.'
+      toast.error(msg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -43,7 +50,7 @@ export default function EsqueciSenha() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-bold text-gray-900">Esqueceu sua senha?</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Informe seu e-mail corporativo cadastrado para enviarmos instruções de redefinição
+              Informe seu e-mail cadastrado no Supabase para enviarmos instruções de redefinição
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -58,13 +65,6 @@ export default function EsqueciSenha() {
                     Enviamos um link para <strong>{email}</strong> com as instruções para cadastrar
                     uma nova senha.
                   </p>
-                </div>
-                <div className="pt-2">
-                  <Link to={`/redefinir-senha?token=demo123&email=${encodeURIComponent(email)}`}>
-                    <Button variant="outline" className="w-full text-xs text-[#2C4A6E]">
-                      Continuar para definição de nova senha (Simulação)
-                    </Button>
-                  </Link>
                 </div>
                 <div className="pt-2">
                   <Link
@@ -87,7 +87,7 @@ export default function EsqueciSenha() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="operacao@mfo.com.br"
+                      placeholder="operacao@mfotrust.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-9 h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"

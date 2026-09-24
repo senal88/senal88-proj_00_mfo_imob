@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { supabaseUpdatePassword } from '@/lib/supabaseClient'
 
 export default function RedefinirSenha() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const emailParam = searchParams.get('email') || 'operacao@mfo.com.br'
+  const emailParam = searchParams.get('email') || ''
 
   const [senha, setSenha] = useState('')
   const [confirmacao, setConfirmacao] = useState('')
@@ -33,10 +34,16 @@ export default function RedefinirSenha() {
     }
 
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setLoading(false)
-    setSucesso(true)
-    toast.success('Senha redefinida com sucesso!')
+    try {
+      await supabaseUpdatePassword(senha)
+      setSucesso(true)
+      toast.success('Senha redefinida com sucesso!')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao atualizar senha.'
+      setErro(msg)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -54,8 +61,14 @@ export default function RedefinirSenha() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-bold text-gray-900">Criar Nova Senha</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Defina sua nova credencial de acesso para a conta{' '}
-              <strong className="text-gray-700">{emailParam}</strong>
+              {emailParam ? (
+                <>
+                  Defina sua nova credencial de acesso para a conta{' '}
+                  <strong className="text-gray-700">{emailParam}</strong>
+                </>
+              ) : (
+                'Defina sua nova credencial de acesso corporativo'
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
