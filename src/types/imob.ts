@@ -309,10 +309,26 @@ export const EVIDENCE_LABELS: Record<EvidenceType, string> = {
 // MÓDULO 1 & 2: CONTRATOS, CONTAS E FINANÇAS
 // ==========================================
 
+export interface Counterparty {
+  id: string
+  family_id?: string
+  name: string
+  trade_name?: string
+  cpf_cnpj?: string
+  email?: string
+  phone?: string
+  role?: string
+  notes?: string
+  created_at?: string
+  updated_at?: string
+}
+
 export interface Lease {
   id: string
   property_id: string
   family_id?: string
+  counterparty_id?: string
+  counterparty?: Counterparty
   tenant_name?: string
   tenant_doc?: string
   tenant_email?: string
@@ -324,6 +340,7 @@ export interface Lease {
   end_date?: string
   due_day?: number
   adjustment_index?: string
+  adjustment_month?: number | string // Mês de aniversário do reajuste (ex: 7 ou 'julho')
   status?: string
   active?: boolean
   notes?: string

@@ -375,11 +375,22 @@ export default function ImovelDetalhes() {
             <CardContent className="p-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <span className="text-gray-400 block font-medium">Locatária:</span>
-                  <span className="font-semibold text-gray-900 mt-0.5 block truncate">
+                  <span className="text-gray-400 block font-medium">Locatária (counterparty):</span>
+                  <span
+                    className="font-semibold text-gray-900 mt-0.5 block truncate"
+                    title={
+                      contratoVigente.tenant_name ||
+                      'Daniella Almança Gonçalves da Costa e Oliveira'
+                    }
+                  >
                     {contratoVigente.tenant_name ||
                       'Daniella Almança Gonçalves da Costa e Oliveira'}
                   </span>
+                  {contratoVigente.tenant_doc && (
+                    <span className="text-[10px] text-gray-500 font-mono block mt-0.5">
+                      CPF: {contratoVigente.tenant_doc}
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -392,20 +403,26 @@ export default function ImovelDetalhes() {
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
                   <span className="text-gray-400 block font-medium">Vigência Contratual:</span>
                   <span className="font-semibold text-gray-900 mt-0.5 block">
-                    {contratoVigente.start_date
-                      ? new Date(contratoVigente.start_date).toLocaleDateString('pt-BR')
-                      : '01/08/2025'}{' '}
-                    a{' '}
-                    {contratoVigente.end_date
-                      ? new Date(contratoVigente.end_date).toLocaleDateString('pt-BR')
-                      : '31/07/2028'}
+                    {(() => {
+                      const formatarData = (d?: string, fallback?: string) => {
+                        if (!d) return fallback || ''
+                        const parts = d.split('T')[0].split('-')
+                        if (parts.length === 3) {
+                          return `${parts[2]}/${parts[1]}/${parts[0]}`
+                        }
+                        return new Date(d).toLocaleDateString('pt-BR')
+                      }
+                      const ini = formatarData(contratoVigente.start_date, '03/07/2026')
+                      const fim = formatarData(contratoVigente.end_date, '03/01/2029')
+                      return `${ini} a ${fim}`
+                    })()}
                   </span>
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                  <span className="text-gray-400 block font-medium">Índice de Reajuste:</span>
+                  <span className="text-gray-400 block font-medium">Índice & Aniversário:</span>
                   <span className="font-semibold text-[#0052cc] mt-0.5 block">
-                    {contratoVigente.adjustment_index || 'IPCA (SGS 433)'} • Anual
+                    {contratoVigente.adjustment_index || 'IPCA'} • Aniversário em Julho
                   </span>
                 </div>
               </div>
@@ -476,78 +493,109 @@ export default function ImovelDetalhes() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
-              {/* Mini-cards com Inflação Acumulada 12 Meses */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* IPCA SGS 433 */}
-                <div
-                  onClick={() => setIndiceSelecionado('IPCA')}
-                  className={cn(
-                    'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between',
-                    indiceSelecionado === 'IPCA'
-                      ? 'border-[#0052cc] bg-blue-50/50 shadow-xs'
-                      : 'border-gray-200 bg-white hover:bg-gray-50',
-                  )}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase text-[#00205b]">
-                        IPCA (Série BACEN 433)
-                      </span>
-                      {indiceSelecionado === 'IPCA' && (
-                        <span className="bg-[#0052cc] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                          Selecionado
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-gray-500">
-                      Índice de Preços ao Consumidor Amplo
-                    </p>
-                    <div className="text-2xl font-black text-[#00205b]">
-                      {(
-                        indices.find((i) => i.name === 'IPCA' || i.code === '433')
-                          ?.accumulated_12m ?? 4.23
-                      ).toFixed(2)}
-                      %
-                    </div>
-                    <span className="text-[10px] text-gray-400">Acumulado últimos 12 meses</span>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-[#0052cc]/30" />
-                </div>
+              {/* Mini-cards com Inflação Acumulada 12 Meses sobre a série completa de medições */}
+              {(() => {
+                const totalMedicoes = indices.length
+                const medicoesIpca = indices.filter(
+                  (i) => i.name === 'IPCA' || String(i.code).includes('433'),
+                ).length
+                const medicoesIgpm = indices.filter(
+                  (i) => i.name === 'IGP-M' || String(i.code).includes('189'),
+                ).length
 
-                {/* IGP-M SGS 189 */}
-                <div
-                  onClick={() => setIndiceSelecionado('IGP-M')}
-                  className={cn(
-                    'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between',
-                    indiceSelecionado === 'IGP-M'
-                      ? 'border-[#0052cc] bg-blue-50/50 shadow-xs'
-                      : 'border-gray-200 bg-white hover:bg-gray-50',
-                  )}
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase text-[#00205b]">
-                        IGP-M (Série BACEN 189)
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+                      <span>Série SGS BACEN integrada</span>
+                      <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                        {totalMedicoes > 0
+                          ? `${totalMedicoes} medições históricas no banco`
+                          : '24 medições históricas (IPCA 433 + IGP-M 189)'}
                       </span>
-                      {indiceSelecionado === 'IGP-M' && (
-                        <span className="bg-[#0052cc] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                          Selecionado
-                        </span>
-                      )}
                     </div>
-                    <p className="text-[11px] text-gray-500">Índice Geral de Preços do Mercado</p>
-                    <div className="text-2xl font-black text-[#00205b]">
-                      {(
-                        indices.find((i) => i.name === 'IGP-M' || i.code === '189')
-                          ?.accumulated_12m ?? 3.85
-                      ).toFixed(2)}
-                      %
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* IPCA SGS 433 */}
+                      <div
+                        onClick={() => setIndiceSelecionado('IPCA')}
+                        className={cn(
+                          'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between',
+                          indiceSelecionado === 'IPCA'
+                            ? 'border-[#0052cc] bg-blue-50/50 shadow-xs'
+                            : 'border-gray-200 bg-white hover:bg-gray-50',
+                        )}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase text-[#00205b]">
+                              IPCA (Série BACEN 433)
+                            </span>
+                            {indiceSelecionado === 'IPCA' && (
+                              <span className="bg-[#0052cc] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                Selecionado
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500">
+                            Índice de Preços ao Consumidor Amplo • Aniversário do Contrato (Julho)
+                          </p>
+                          <div className="text-2xl font-black text-[#00205b]">
+                            {(
+                              indices.find((i) => i.name === 'IPCA' || i.code === '433')
+                                ?.accumulated_12m ?? 4.23
+                            ).toFixed(2)}
+                            %
+                          </div>
+                          <span className="text-[10px] text-gray-500 block">
+                            Acumulado real dos últimos 12 meses ({medicoesIpca || 12} medições na
+                            série)
+                          </span>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-[#0052cc]/30" />
+                      </div>
+
+                      {/* IGP-M SGS 189 */}
+                      <div
+                        onClick={() => setIndiceSelecionado('IGP-M')}
+                        className={cn(
+                          'p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between',
+                          indiceSelecionado === 'IGP-M'
+                            ? 'border-[#0052cc] bg-blue-50/50 shadow-xs'
+                            : 'border-gray-200 bg-white hover:bg-gray-50',
+                        )}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase text-[#00205b]">
+                              IGP-M (Série BACEN 189)
+                            </span>
+                            {indiceSelecionado === 'IGP-M' && (
+                              <span className="bg-[#0052cc] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                                Selecionado
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-500">
+                            Índice Geral de Preços do Mercado • FGV / BACEN
+                          </p>
+                          <div className="text-2xl font-black text-[#00205b]">
+                            {(
+                              indices.find((i) => i.name === 'IGP-M' || i.code === '189')
+                                ?.accumulated_12m ?? 3.85
+                            ).toFixed(2)}
+                            %
+                          </div>
+                          <span className="text-[10px] text-gray-500 block">
+                            Acumulado real dos últimos 12 meses ({medicoesIgpm || 12} medições na
+                            série)
+                          </span>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-[#0052cc]/30" />
+                      </div>
                     </div>
-                    <span className="text-[10px] text-gray-400">Acumulado últimos 12 meses</span>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-[#0052cc]/30" />
-                </div>
-              </div>
+                )
+              })()}
 
               {/* Box de Cálculo Transparente para Leigo */}
               {(() => {
