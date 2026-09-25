@@ -24,10 +24,16 @@ export function getSupabaseConfig(): SupabaseConfig {
       ? (window as unknown as { __SUPABASE_ANON_KEY__?: string }).__SUPABASE_ANON_KEY__ || ''
       : '')
 
+  const schema =
+    (import.meta.env.VITE_SUPABASE_SCHEMA as string | undefined)?.trim() ||
+    (typeof window !== 'undefined'
+      ? (window as unknown as { __SUPABASE_SCHEMA__?: string }).__SUPABASE_SCHEMA__ || 'imob'
+      : 'imob')
+
   return {
     url: url.replace(/\/+$/, ''),
     anonKey,
-    schema: 'imob',
+    schema,
   }
 }
 

@@ -47,29 +47,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cfg = getSupabaseConfig()
 
     try {
-      if (cfg.url && senha) {
-        // Autentica diretamente no Supabase self-hosted
-        const session = await supabaseSignIn(email.trim(), senha)
-        const user = await resolverUsuarioLogado(session)
-        setUsuario(user)
-        setIsLoading(false)
-        return true
+      if (!cfg.url || !cfg.anonKey) {
+        throw new Error(
+          'Configuração de servidor ausente — contate o suporte para verificar as variáveis do Supabase.',
+        )
       }
 
-      // Se VITE_SUPABASE_URL não estiver configurada no preview, usa operador admin BNI
-      const fallbackUser: Usuario = {
-        id: 'usr-bni-admin',
-        nome: email
-          .split('@')[0]
-          .replace(/[._]/g, ' ')
-          .replace(/\b\w/g, (l) => l.toUpperCase()),
-        email: email.trim(),
-        cargo: 'Administrador Family Office',
-        familia_id: 'fam-bni',
-        familia_nome: 'Família BNI',
+      if (!senha) {
+        throw new Error('Informe sua senha de acesso.')
       }
-      setStoredUser(fallbackUser)
-      setUsuario(fallbackUser)
+
+      // Autentica diretamente no Supabase self-hosted
+      const session = await supabaseSignIn(email.trim(), senha)
+      const user = await resolverUsuarioLogado(session)
+      setUsuario(user)
       setIsLoading(false)
       return true
     } catch (err) {
