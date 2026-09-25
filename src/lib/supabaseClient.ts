@@ -11,24 +11,33 @@ export interface SupabaseConfig {
 
 const STORAGE_SESSION_KEY = 'mfo_imob_supabase_session_v1'
 
+const DEFAULT_SUPABASE_URL = 'https://supabase.senamfo.com.br'
+const DEFAULT_SUPABASE_SCHEMA = 'imob'
+
 export function getSupabaseConfig(): SupabaseConfig {
-  const url =
-    (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim() ||
-    (typeof window !== 'undefined'
-      ? (window as unknown as { __SUPABASE_URL__?: string }).__SUPABASE_URL__ || ''
-      : '')
+  const envUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
+  const windowUrl =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __SUPABASE_URL__?: string }).__SUPABASE_URL__?.trim()
+      : undefined
 
-  const anonKey =
-    (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim() ||
-    (typeof window !== 'undefined'
-      ? (window as unknown as { __SUPABASE_ANON_KEY__?: string }).__SUPABASE_ANON_KEY__ || ''
-      : '')
+  const url = envUrl || windowUrl || DEFAULT_SUPABASE_URL
 
-  const schema =
-    (import.meta.env.VITE_SUPABASE_SCHEMA as string | undefined)?.trim() ||
-    (typeof window !== 'undefined'
-      ? (window as unknown as { __SUPABASE_SCHEMA__?: string }).__SUPABASE_SCHEMA__ || 'imob'
-      : 'imob')
+  const envAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
+  const windowAnonKey =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __SUPABASE_ANON_KEY__?: string }).__SUPABASE_ANON_KEY__?.trim()
+      : undefined
+
+  const anonKey = envAnonKey || windowAnonKey || ''
+
+  const envSchema = (import.meta.env.VITE_SUPABASE_SCHEMA as string | undefined)?.trim()
+  const windowSchema =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __SUPABASE_SCHEMA__?: string }).__SUPABASE_SCHEMA__?.trim()
+      : undefined
+
+  const schema = envSchema || windowSchema || DEFAULT_SUPABASE_SCHEMA
 
   return {
     url: url.replace(/\/+$/, ''),
