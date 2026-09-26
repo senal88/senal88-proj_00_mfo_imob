@@ -190,25 +190,63 @@ export async function listarImoveis(familiaId?: string, busca?: string): Promise
   }
 
   try {
+    // Sempre busca a lista completa ordenada para permitir agrupamento de hierarquia e busca consistente
     let query = 'property?select=*,entity:entity_id(id,name,sigla)'
 
     if (familiaId) {
       query += `&family_id=eq.${encodeURIComponent(familiaId)}`
     }
 
-    if (busca && busca.trim()) {
-      const q = encodeURIComponent(`*${busca.trim()}*`)
-      query += `&or=(display_name.ilike.${q},code.ilike.${q},address.ilike.${q},city.ilike.${q},registry_number.ilike.${q},unit.ilike.${q},iptu_number.ilike.${q})`
-    }
-
-    query += '&order=display_name.asc'
+    query += '&order=code.asc,display_name.asc'
 
     const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
     if (!rows || !Array.isArray(rows)) return []
 
-    return rows.map(mapDbToImovel)
+    const imoveis = rows.map(mapDbToImovel)
+
+    // Se houver termo de busca, filtra localmente para garantir correspondência tanto no pai quanto na filha
+    if (busca && busca.trim()) {
+      const termo = busca.trim().toLowerCase()
+      return imoveis.filter((imv) => {
+        return (
+          imv.display_name?.toLowerCase().includes(termo) ||
+          imv.code?.toLowerCase().includes(termo) ||
+          imv.unit?.toLowerCase().includes(termo) ||
+          imv.address?.toLowerCase().includes(termo) ||
+          imv.city?.toLowerCase().includes(termo) ||
+          imv.registry_number?.toLowerCase().includes(termo) ||
+          imv.iptu_number?.toLowerCase().includes(termo) ||
+          imv.entity_name?.toLowerCase().includes(termo)
+        )
+      })
+    }
+
+    return imoveis
   } catch (err) {
     console.error('Erro ao listar imóveis do Supabase:', err)
+    return []
+  }
+}
+
+/**
+ * Retorna todos os imóveis da família para montar a árvore hierárquica completa
+ */
+export async function listarTodosImoveisParaHierarquia(familiaId?: string): Promise<Imovel[]> {
+  const cfg = getSupabaseConfig()
+  if (!cfg.url) return []
+
+  try {
+    let query = 'property?select=*,entity:entity_id(id,name,sigla)'
+    if (familiaId) {
+      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+    }
+    query += '&order=code.asc,display_name.asc'
+
+    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
+    if (!rows || !Array.isArray(rows)) return []
+    return rows.map(mapDbToImovel)
+  } catch (err) {
+    console.warn('Erro ao consultar todos os imóveis para hierarquia:', err)
     return []
   }
 }
@@ -253,6 +291,7 @@ export interface SalvarImovelParams {
   area_private_m2?: number
   status: SituacaoOcupacao
   accounting_nature?: string
+  parent_property_id?: string | null
 }
 
 export async function salvarImovel(
@@ -283,17 +322,37 @@ export async function salvarImovel(
       area_private_m2: dados.area_private_m2 !== undefined ? dados.area_private_m2 : null,
       status: dados.status,
       accounting_nature: dados.accounting_nature?.trim() || null,
+      parent_property_id: dados.parent_property_id || null,
       updated_at: now,
     }
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(
-      `property?id=eq.${encodeURIComponent(dados.id)}`,
-      {
-        method: 'PATCH',
-        body: payload,
-        prefer: 'return=representation',
-      },
-    )
+    let rows: Array<Record<string, unknown>> | null = null
+    try {
+      rows = await supabaseRest<Array<Record<string, unknown>>>(
+        `property?id=eq.${encodeURIComponent(dados.id)}`,
+        {
+          method: 'PATCH',
+          body: payload,
+          prefer: 'return=representation',
+        },
+      )
+    } catch (patchErr) {
+      // Se falhar por parent_property_id não existir como coluna física (defensivo)
+      if (String(patchErr).includes('parent_property_id')) {
+        const fallbackPayload = { ...payload }
+        delete fallbackPayload.parent_property_id
+        rows = await supabaseRest<Array<Record<string, unknown>>>(
+          `property?id=eq.${encodeURIComponent(dados.id)}`,
+          {
+            method: 'PATCH',
+            body: fallbackPayload,
+            prefer: 'return=representation',
+          },
+        )
+      } else {
+        throw patchErr
+      }
+    }
 
     if (mudouStatus) {
       await registrarHistoricoStatus({
@@ -326,15 +385,31 @@ export async function salvarImovel(
       area_private_m2: dados.area_private_m2 !== undefined ? dados.area_private_m2 : null,
       status: dados.status,
       accounting_nature: dados.accounting_nature?.trim() || null,
+      parent_property_id: dados.parent_property_id || null,
       created_at: now,
       updated_at: now,
     }
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>('property', {
-      method: 'POST',
-      body: payload,
-      prefer: 'return=representation',
-    })
+    let rows: Array<Record<string, unknown>> | null = null
+    try {
+      rows = await supabaseRest<Array<Record<string, unknown>>>('property', {
+        method: 'POST',
+        body: payload,
+        prefer: 'return=representation',
+      })
+    } catch (postErr) {
+      if (String(postErr).includes('parent_property_id')) {
+        const fallbackPayload = { ...payload }
+        delete fallbackPayload.parent_property_id
+        rows = await supabaseRest<Array<Record<string, unknown>>>('property', {
+          method: 'POST',
+          body: fallbackPayload,
+          prefer: 'return=representation',
+        })
+      } else {
+        throw postErr
+      }
+    }
 
     const novo = rows && rows.length > 0 ? mapDbToImovel(rows[0]) : null
     if (!novo) {
@@ -736,6 +811,7 @@ function mapDbToImovel(r: Record<string, unknown>): Imovel {
         : undefined,
     status: (r.status as SituacaoOcupacao) || 'disponivel',
     accounting_nature: r.accounting_nature ? String(r.accounting_nature) : undefined,
+    parent_property_id: r.parent_property_id ? String(r.parent_property_id) : null,
     created_at: String(r.created_at || new Date().toISOString()),
     updated_at: String(r.updated_at || new Date().toISOString()),
     entity_name: entityObj?.name || (r.entity_name ? String(r.entity_name) : undefined),
@@ -969,17 +1045,42 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
 
     const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
     if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      // Fallback com as 3 contas reais solicitadas caso a tabela ainda não devolva linhas
       return [
         {
-          id: 'acc-btg-51002',
+          id: 'acc-btg-4177348',
           family_id: familiaId || 'fam-bni',
           bank_name: 'Banco BTG Pactual S.A.',
           bank_code: '208',
           agency: '0001',
-          account_number: '51002-9',
+          account_number: '417734-8',
           account_type: 'Conta Corrente',
-          description: 'Conta Subledger • Locação Imóvel 51002 (Ed. Emílio Bumachar)',
+          description: 'BTG Pactual • Conta 417734-8',
           balance: 10000,
+          is_active: true,
+        },
+        {
+          id: 'acc-caixa-5784121967',
+          family_id: familiaId || 'fam-bni',
+          bank_name: 'Caixa Econômica Federal',
+          bank_code: '104',
+          agency: '0167',
+          account_number: '000578412196-7',
+          account_type: 'Conta Corrente',
+          description: 'Caixa • Conta 000578412196-7',
+          balance: 0,
+          is_active: true,
+        },
+        {
+          id: 'acc-caixa-repasse',
+          family_id: familiaId || 'fam-bni',
+          bank_name: 'Caixa Econômica Federal',
+          bank_code: '104',
+          agency: '0167',
+          account_number: 'Repasse',
+          account_type: 'Conta Repasse',
+          description: 'Caixa repasse',
+          balance: 0,
           is_active: true,
         },
       ]
@@ -989,15 +1090,39 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
     console.warn('Erro ao consultar contas bancárias:', err)
     return [
       {
-        id: 'acc-btg-51002',
+        id: 'acc-btg-4177348',
         family_id: familiaId || 'fam-bni',
         bank_name: 'Banco BTG Pactual S.A.',
         bank_code: '208',
         agency: '0001',
-        account_number: '51002-9',
+        account_number: '417734-8',
         account_type: 'Conta Corrente',
-        description: 'Conta Subledger • Locação Imóvel 51002 (Ed. Emílio Bumachar)',
+        description: 'BTG Pactual • Conta 417734-8',
         balance: 10000,
+        is_active: true,
+      },
+      {
+        id: 'acc-caixa-5784121967',
+        family_id: familiaId || 'fam-bni',
+        bank_name: 'Caixa Econômica Federal',
+        bank_code: '104',
+        agency: '0167',
+        account_number: '000578412196-7',
+        account_type: 'Conta Corrente',
+        description: 'Caixa • Conta 000578412196-7',
+        balance: 0,
+        is_active: true,
+      },
+      {
+        id: 'acc-caixa-repasse',
+        family_id: familiaId || 'fam-bni',
+        bank_name: 'Caixa Econômica Federal',
+        bank_code: '104',
+        agency: '0167',
+        account_number: 'Repasse',
+        account_type: 'Conta Repasse',
+        description: 'Caixa repasse',
+        balance: 0,
         is_active: true,
       },
     ]
@@ -1472,14 +1597,19 @@ function mapDbToLease(r: Record<string, unknown>): Lease {
 }
 
 function mapDbToBankAccount(r: Record<string, unknown>): BankAccount {
+  const bankName = String(r.bank_name || r.name || 'Banco')
+  const isCaixa = bankName.toLowerCase().includes('caixa')
+  const defaultBankCode = isCaixa ? '104' : '208'
+  const defaultAgency = isCaixa ? '0167' : '0001'
+
   return {
     id: String(r.id),
     family_id: r.family_id ? String(r.family_id) : undefined,
     entity_id: r.entity_id ? String(r.entity_id) : undefined,
-    bank_name: String(r.bank_name || r.name || 'Banco BTG Pactual S.A.'),
-    bank_code: r.bank_code ? String(r.bank_code) : '208',
-    agency: String(r.agency || r.branch || '0001'),
-    account_number: String(r.account_number || r.account || '51002-9'),
+    bank_name: bankName,
+    bank_code: r.bank_code ? String(r.bank_code) : defaultBankCode,
+    agency: String(r.agency || r.branch || defaultAgency),
+    account_number: String(r.account_number || r.account || ''),
     account_type: r.account_type ? String(r.account_type) : 'Conta Corrente',
     description: r.description ? String(r.description) : undefined,
     balance: r.balance !== undefined && r.balance !== null ? Number(r.balance) : undefined,

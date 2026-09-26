@@ -95,6 +95,7 @@ export interface Imovel {
   area_private_m2?: number // Área privativa em m² (número, opcional)
   status: SituacaoOcupacao // Situação (7 valores)
   accounting_nature?: string // Natureza contábil (opcional)
+  parent_property_id?: string | null // Vínculo hierárquico com imóvel pai (ex: lojas sob 51120)
   created_at: string
   updated_at: string
 

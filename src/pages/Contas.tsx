@@ -65,20 +65,41 @@ export default function Contas() {
         listarCobrancasLocacao({ familiaId: usuario?.familia_id }),
       ])
 
-      // Fallback gracioso com os dados reais esperados se a tabela retornar vazia
       const accList: BankAccount[] =
         accs.length > 0
           ? accs
           : [
               {
-                id: 'acc-btg-51002',
+                id: 'acc-btg-4177348',
                 bank_name: 'Banco BTG Pactual S.A.',
                 bank_code: '208',
                 agency: '0001',
-                account_number: '51002-9',
+                account_number: '417734-8',
                 account_type: 'Conta Corrente',
-                description: 'Conta Subledger • Locação Imóvel 51002 (Ed. Emílio Bumachar)',
+                description: 'BTG Pactual • Conta 417734-8',
                 balance: 10000,
+                is_active: true,
+              },
+              {
+                id: 'acc-caixa-5784121967',
+                bank_name: 'Caixa Econômica Federal',
+                bank_code: '104',
+                agency: '0167',
+                account_number: '000578412196-7',
+                account_type: 'Conta Corrente',
+                description: 'Caixa • Conta 000578412196-7',
+                balance: 0,
+                is_active: true,
+              },
+              {
+                id: 'acc-caixa-repasse',
+                bank_name: 'Caixa Econômica Federal',
+                bank_code: '104',
+                agency: '0167',
+                account_number: 'Repasse',
+                account_type: 'Conta Repasse',
+                description: 'Caixa repasse',
+                balance: 0,
                 is_active: true,
               },
             ]
@@ -138,9 +159,15 @@ export default function Contas() {
             ]
 
       setContas(accList)
-      setContaSelecionada(accList[0])
+      setContaSelecionada((prev) => {
+        if (prev) {
+          const matched = accList.find((a) => a.id === prev.id)
+          if (matched) return matched
+        }
+        return accList[0] || null
+      })
       setExtratos(stmtList)
-      setExtratoSelecionado(stmtList[0])
+      setExtratoSelecionado(stmtList[0] || null)
       setTransacoes(txList)
       setCobrancas(chargeList)
     } finally {
@@ -285,6 +312,69 @@ export default function Contas() {
         </div>
       </div>
 
+      {/* Seletor e Abas das Contas Bancárias Reais */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+            Contas Cadastradas ({contas.length})
+          </span>
+          <span className="text-xs text-gray-400">
+            Origem: <code>imob.bank_account</code>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {contas.map((acc) => {
+            const isSelected = contaSelecionada?.id === acc.id
+            return (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => setContaSelecionada(acc)}
+                className={cn(
+                  'text-left p-4 rounded-xl border transition-all flex flex-col justify-between gap-2 shadow-xs',
+                  isSelected
+                    ? 'border-[#0052cc] bg-blue-50/60 ring-2 ring-[#0052cc]/20'
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50',
+                )}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-bold text-[#00205b] truncate">
+                    {acc.bank_name || 'Banco'}
+                  </span>
+                  <span
+                    className={cn(
+                      'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded',
+                      isSelected ? 'bg-[#00205b] text-white' : 'bg-gray-100 text-gray-600',
+                    )}
+                  >
+                    {acc.bank_code ? `Cód. ${acc.bank_code}` : 'Ativa'}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="text-sm font-black text-gray-900 font-mono">
+                    {acc.account_number || acc.description || 'Conta'}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {acc.description || `${acc.account_type || 'Conta'} • Ag. ${acc.agency || '-'}`}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100/80 flex items-center justify-between text-[11px] w-full">
+                  <span className="text-gray-400">Agência: {acc.agency || '-'}</span>
+                  <span className="font-semibold text-emerald-700">
+                    {acc.balance !== undefined && acc.balance !== null
+                      ? formatarMoeda(acc.balance)
+                      : 'Monitorada'}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Cards de Resumo & Conta Bancária Ativa */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Card Conta Bancária Principal */}
@@ -296,10 +386,10 @@ export default function Contas() {
               </div>
               <div>
                 <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
-                  Conta Bancária Titular
+                  Conta Selecionada
                 </span>
                 <h3 className="text-sm font-bold text-[#00205b] leading-tight">
-                  {contaSelecionada?.bank_name || 'Banco BTG Pactual S.A.'}
+                  {contaSelecionada?.bank_name || 'Conta Bancária'}
                 </h3>
               </div>
             </div>
@@ -308,28 +398,36 @@ export default function Contas() {
               <div className="flex justify-between">
                 <span className="text-gray-500">Agência:</span>
                 <span className="font-semibold text-gray-800">
-                  {contaSelecionada?.agency || '0001'}
+                  {contaSelecionada?.agency || '-'}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Conta Corrente:</span>
+                <span className="text-gray-500">Número da Conta:</span>
                 <span className="font-mono font-bold text-[#00205b]">
-                  {contaSelecionada?.account_number || '51002-9'}
+                  {contaSelecionada?.account_number || '-'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Código do Banco:</span>
                 <span className="font-semibold text-gray-800">
-                  {contaSelecionada?.bank_code || '208'}
+                  {contaSelecionada?.bank_code || '-'}
                 </span>
               </div>
+              {contaSelecionada?.description && (
+                <div className="flex justify-between pt-1 text-[11px] text-gray-500">
+                  <span>Descrição:</span>
+                  <span className="font-medium text-gray-700 text-right truncate max-w-[180px]">
+                    {contaSelecionada.description}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
               <span className="text-[11px] text-gray-500">Status Subledger:</span>
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                 <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                Ativa e Monitorada
+                Ativa no Supabase
               </span>
             </div>
           </CardContent>

@@ -251,11 +251,8 @@ export default function ImovelDetalhes() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <SituacaoBadge
-                situacao={imovel.code === '51002' || contratoVigente ? 'locado' : imovel.status}
-                size="lg"
-              />
-              {/* Código destacado (ex.: 51002) */}
+              <SituacaoBadge situacao={contratoVigente ? 'locado' : imovel.status} size="lg" />
+              {/* Código destacado */}
               <span className="rounded-md bg-[#00205b]/10 text-[#00205b] px-2.5 py-1 text-xs font-mono font-bold border border-[#00205b]/20">
                 Código: {imovel.code}
               </span>
