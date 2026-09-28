@@ -191,12 +191,12 @@ export default function ImovelDetalhes() {
     )
   }
 
-  // 7 situações de ocupação exatas
+  // 7 situações de ocupação oficiais do banco (em_construcao incluído; em_obra expurgado)
   const situacoes: SituacaoOcupacao[] = [
     'disponivel',
     'locado',
+    'em_construcao',
     'em_reforma',
-    'em_obra',
     'uso_proprio',
     'a_venda',
     'vendido',
@@ -868,7 +868,7 @@ export default function ImovelDetalhes() {
               </CardTitle>
               <CardDescription className="text-xs text-gray-500">
                 Derivado automaticamente por prioridade legal: Matrícula → Escritura → Contrato de
-                locação → Espelho IPTU → Outros
+                locação → Espelho IPTU → Laudo de avaliação → Outros
               </CardDescription>
             </div>
             {documentoPrincipal && (

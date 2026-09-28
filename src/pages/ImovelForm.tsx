@@ -30,19 +30,19 @@ export default function ImovelForm() {
   const { usuario } = useAuth()
   const isEditing = Boolean(id)
 
-  // 1) CAMPOS EXATOS:
-  // display_name (obrigatório) → "Nome do imóvel"
-  // code (obrigatório, único por família; piloto "51002") → "Código"
-  // kind (obrigatório; apartamento, casa, loja, sala, terreno, galpao, vaga, outro) → "Tipo"
-  // unit (opcional) → "Unidade (ex.: 902)"
-  // address, city, state (opcionais) → "Endereço", "Cidade", "Estado"
-  // registry_number → "Matrícula" · registry_office → "Cartório"
-  // iptu_number (opcional) → "Inscrição do IPTU"
-  // area_private_m2 (número, opcional) → "Área privativa (m²)"
-  // status → "Situação" (7 valores)
-  // accounting_nature (opcional) → "Natureza contábil"
-  // entity_id (obrigatório) → "Entidade proprietária", pré-selecionar a entidade da família (no piloto, BNI)
-  // IMPORTANTE: NÃO existe coluna de observações!
+  // Bloco 1 — CAMPOS DO FORMULÁRIO DO IMÓVEL (tabela imob.property):
+  // - display_name (texto, obrigatório) -> "Nome do imóvel"
+  // - code (texto, obrigatório, único por família; no piloto é "51002") -> rótulo secundário
+  // - kind (obrigatório: apartamento, casa, loja, sala, terreno, galpao, vaga, outro)
+  // - unit (texto, opcional) -> unidade (ex: "902")
+  // - address, city, state (opcionais) -> endereço completo
+  // - registry_number -> "Matrícula" | registry_office -> "Cartório"
+  // - iptu_number (opcional) -> inscrição cadastral IPTU
+  // - area_private_m2 (número, opcional) -> área privativa em m²
+  // - status -> situação do imóvel (exatamente os 7 valores: disponivel, locado, em_construcao, em_reforma, uso_proprio, a_venda, vendido)
+  // - accounting_nature (texto, opcional: renda, estoque, uso_proprio, em_obra)
+  // - entity_id (obrigatório) -> entidade proprietária (pré-selecionar BNI)
+  // ATENÇÃO: NÃO existe coluna de observações no banco. Campo observações removido.
 
   const [entidades, setEntidades] = useState<EntidadeProprietaria[]>([])
   const [entityId, setEntityId] = useState('')
@@ -73,7 +73,13 @@ export default function ImovelForm() {
     setEntidades(lista)
     // Pré-seleciona BNI ou a primeira entidade da família
     if (!entityId && lista.length > 0) {
-      const bni = lista.find((e) => e.sigla === 'BNI' || e.nome.includes('BNI'))
+      const bni = lista.find(
+        (e) =>
+          e.sigla?.toUpperCase() === 'BNI' ||
+          e.nome?.toUpperCase().includes('BNI') ||
+          e.display_name?.toUpperCase().includes('BNI') ||
+          e.legal_name?.toUpperCase().includes('BNI'),
+      )
       setEntityId(bni ? bni.id : lista[0].id)
     }
   }, [usuario?.familia_id, entityId])
@@ -186,12 +192,12 @@ export default function ImovelForm() {
     )
   }
 
-  // Lista fechada de 7 situações
+  // Lista fechada de 7 situações oficiais do banco (termo em_obra expurgado; em_construcao incluído)
   const opcoesSituacao: SituacaoOcupacao[] = [
     'disponivel',
     'locado',
+    'em_construcao',
     'em_reforma',
-    'em_obra',
     'uso_proprio',
     'a_venda',
     'vendido',
@@ -266,7 +272,12 @@ export default function ImovelForm() {
                   <SelectContent className="bg-white">
                     {entidades.map((ent) => (
                       <SelectItem key={ent.id} value={ent.id}>
-                        {ent.nome} ({ent.sigla})
+                        {ent.display_name || ent.nome}{' '}
+                        {ent.legal_name && ent.legal_name !== ent.nome
+                          ? `(${ent.legal_name})`
+                          : ent.sigla
+                            ? `(${ent.sigla})`
+                            : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -304,9 +315,12 @@ export default function ImovelForm() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="code" className="text-xs font-bold text-gray-700">
-                    Código <span className="text-red-500">*</span>
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="code" className="text-xs font-bold text-gray-700">
+                      Código do imóvel <span className="text-red-500">*</span>
+                    </Label>
+                    <span className="text-[10px] text-gray-400">Rótulo secundário</span>
+                  </div>
                   <Input
                     id="code"
                     placeholder="Ex.: 51002"
@@ -316,7 +330,7 @@ export default function ImovelForm() {
                       if (erros.code) setErros((prev) => ({ ...prev, code: '' }))
                     }}
                     className={cn(
-                      'h-11 bg-gray-50/50 text-sm font-mono focus-visible:ring-[#2C4A6E]',
+                      'h-11 bg-gray-50/50 text-sm font-mono focus-visible:ring-[#00205b]',
                       erros.code && 'border-red-500 focus-visible:ring-red-500',
                     )}
                   />
@@ -346,14 +360,14 @@ export default function ImovelForm() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="unit" className="text-xs font-bold text-gray-700">
-                    Unidade (ex.: 902)
+                    Unidade (ex: &quot;902&quot;)
                   </Label>
                   <Input
                     id="unit"
-                    placeholder="Ex.: 1402, Bloco B ou Lote 04"
+                    placeholder="Ex.: 902, Loja 01, Galpão A"
                     value={unit}
                     onChange={(e) => setUnit(e.target.value)}
-                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
+                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#00205b]"
                   />
                 </div>
               </div>
@@ -445,27 +459,27 @@ export default function ImovelForm() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2 space-y-1.5">
                   <Label htmlFor="iptu_number" className="text-xs font-bold text-gray-700">
-                    Inscrição do IPTU
+                    Inscrição cadastral IPTU
                   </Label>
                   <Input
                     id="iptu_number"
                     placeholder="Ex.: 014.288.0092-1"
                     value={iptuNumber}
                     onChange={(e) => setIptuNumber(e.target.value)}
-                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
+                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#00205b]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="area_private_m2" className="text-xs font-bold text-gray-700">
-                    Área privativa (m²)
+                    Área privativa em m²
                   </Label>
                   <Input
                     id="area_private_m2"
                     placeholder="Ex.: 185.50"
                     value={areaPrivateM2}
                     onChange={(e) => setAreaPrivateM2(e.target.value)}
-                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
+                    className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#00205b]"
                   />
                   {erros.areaPrivateM2 && (
                     <p className="text-xs text-red-600 font-medium">{erros.areaPrivateM2}</p>
@@ -474,16 +488,38 @@ export default function ImovelForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="accounting_nature" className="text-xs font-bold text-gray-700">
-                  Natureza contábil
-                </Label>
-                <Input
-                  id="accounting_nature"
-                  placeholder="Ex.: Investimento para Renda, Imobilizado de Uso, etc."
-                  value={accountingNature}
-                  onChange={(e) => setAccountingNature(e.target.value)}
-                  className="h-11 bg-gray-50/50 text-sm focus-visible:ring-[#2C4A6E]"
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="accounting_nature" className="text-xs font-bold text-gray-700">
+                    Natureza contábil
+                  </Label>
+                  <span className="text-[10px] text-gray-400">
+                    renda, estoque, uso_proprio, em_obra
+                  </span>
+                </div>
+                <Select value={accountingNature} onValueChange={setAccountingNature}>
+                  <SelectTrigger id="accounting_nature" className="h-11 bg-gray-50/50 text-sm">
+                    <SelectValue placeholder="Selecione a natureza contábil (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="renda">renda — Imóvel de renda / aluguel</SelectItem>
+                    <SelectItem value="estoque">estoque — Estoque para comercialização</SelectItem>
+                    <SelectItem value="uso_proprio">
+                      uso_proprio — Uso institucional / próprio
+                    </SelectItem>
+                    <SelectItem value="em_obra">
+                      em_obra — Benfeitorias / desenvolvimento
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                {accountingNature && (
+                  <button
+                    type="button"
+                    onClick={() => setAccountingNature('')}
+                    className="text-[11px] text-[#0052cc] hover:underline"
+                  >
+                    Limpar seleção contábil
+                  </button>
+                )}
               </div>
             </div>
 
@@ -510,7 +546,7 @@ export default function ImovelForm() {
                       className={cn(
                         'flex items-start justify-between p-3 rounded-xl border text-left transition-all',
                         isSelected
-                          ? cn(cfg.btnClass, 'shadow-xs ring-2 ring-offset-1 ring-[#2C4A6E]')
+                          ? cn(cfg.btnClass, 'shadow-xs ring-2 ring-offset-1 ring-[#00205b]')
                           : 'bg-white hover:bg-gray-50 border-gray-200 text-gray-800',
                       )}
                     >

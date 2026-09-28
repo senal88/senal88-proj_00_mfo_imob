@@ -146,35 +146,51 @@ export async function listarEntidades(familiaId?: string): Promise<EntidadePropr
   }
 
   try {
-    let query = 'entity?select=*'
+    let query = 'entity?select=id,display_name,legal_name,family_id,tax_id'
     if (familiaId) {
       query += `&family_id=eq.${encodeURIComponent(familiaId)}`
     }
-    query += '&order=name.asc'
+    query += '&order=display_name.asc'
 
-    const data = await supabaseRest<
-      Array<{
-        id: string
-        family_id?: string
-        familia_id?: string
-        name?: string
-        nome?: string
-        sigla?: string
-        code?: string
-        cnpj?: string
-        tax_id?: string
-      }>
-    >(query)
+    let data: Array<{
+      id: string
+      family_id?: string
+      display_name?: string
+      legal_name?: string
+      name?: string
+      sigla?: string
+      code?: string
+      cnpj?: string
+      tax_id?: string
+    }> | null = null
+
+    try {
+      data = await supabaseRest(query)
+    } catch {
+      // Fallback para select=* caso alguma coluna opcional varie
+      let fallbackQuery = 'entity?select=*'
+      if (familiaId) {
+        fallbackQuery += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      }
+      data = await supabaseRest(fallbackQuery)
+    }
 
     if (!data || !Array.isArray(data)) return []
 
-    return data.map((d) => ({
-      id: d.id,
-      familia_id: d.family_id || d.familia_id || familiaId || '',
-      nome: d.name || d.nome || d.sigla || 'Entidade',
-      sigla: d.sigla || d.code || '',
-      cnpj: d.cnpj || d.tax_id || undefined,
-    }))
+    return data.map((d) => {
+      const nomeExibicao = d.display_name || d.name || d.legal_name || 'Entidade'
+      const sigla =
+        d.sigla || d.code || (d.display_name && d.display_name.length <= 10 ? d.display_name : '')
+      return {
+        id: d.id,
+        familia_id: d.family_id || familiaId || '',
+        nome: nomeExibicao,
+        sigla: sigla || 'BNI',
+        display_name: d.display_name || nomeExibicao,
+        legal_name: d.legal_name || nomeExibicao,
+        cnpj: d.cnpj || d.tax_id || undefined,
+      }
+    })
   } catch (err) {
     console.warn('Erro ao consultar entidades no Supabase:', err)
     return []
@@ -190,8 +206,8 @@ export async function listarImoveis(familiaId?: string, busca?: string): Promise
   }
 
   try {
-    // Sempre busca a lista completa ordenada para permitir agrupamento de hierarquia e busca consistente
-    let query = 'property?select=*,entity:entity_id(id,name,sigla)'
+    // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
+    let query = 'property?select=*,entity:entity_id(id,display_name,legal_name)'
 
     if (familiaId) {
       query += `&family_id=eq.${encodeURIComponent(familiaId)}`
@@ -236,7 +252,8 @@ export async function listarTodosImoveisParaHierarquia(familiaId?: string): Prom
   if (!cfg.url) return []
 
   try {
-    let query = 'property?select=*,entity:entity_id(id,name,sigla)'
+    // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
+    let query = 'property?select=*,entity:entity_id(id,display_name,legal_name)'
     if (familiaId) {
       query += `&family_id=eq.${encodeURIComponent(familiaId)}`
     }
@@ -258,7 +275,8 @@ export async function obterImovelPorId(id: string, familiaId?: string): Promise<
   }
 
   try {
-    let query = `property?id=eq.${encodeURIComponent(id)}&select=*,entity:entity_id(id,name,sigla)`
+    // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
+    let query = `property?id=eq.${encodeURIComponent(id)}&select=*,entity:entity_id(id,display_name,legal_name)`
     if (familiaId) {
       query += `&family_id=eq.${encodeURIComponent(familiaId)}`
     }
@@ -790,7 +808,16 @@ export async function removerDocumento(id: string, familiaId?: string): Promise<
 // --- MAPEADORES INTERNOS (DB -> FRONTEND TYPES) ---
 
 function mapDbToImovel(r: Record<string, unknown>): Imovel {
-  const entityObj = r.entity as { id?: string; name?: string; sigla?: string } | undefined
+  const entityObj = r.entity as
+    | { id?: string; display_name?: string; legal_name?: string; name?: string; sigla?: string }
+    | undefined
+
+  const resolvedEntityName =
+    entityObj?.display_name ||
+    entityObj?.legal_name ||
+    entityObj?.name ||
+    (r.entity_name ? String(r.entity_name) : undefined)
+
   return {
     id: String(r.id),
     familia_id: String(r.family_id || r.familia_id || ''),
@@ -814,7 +841,7 @@ function mapDbToImovel(r: Record<string, unknown>): Imovel {
     parent_property_id: r.parent_property_id ? String(r.parent_property_id) : null,
     created_at: String(r.created_at || new Date().toISOString()),
     updated_at: String(r.updated_at || new Date().toISOString()),
-    entity_name: entityObj?.name || (r.entity_name ? String(r.entity_name) : undefined),
+    entity_name: resolvedEntityName,
   }
 }
 
@@ -853,7 +880,7 @@ export async function obterContratoVigentePorImovel(
         return {
           id: 'lease-51002-902',
           property_id: propertyId,
-          family_id: familiaId || 'fam-bni',
+          family_id: familiaId || '',
           counterparty_id: 'cp-daniella-almanca',
           counterparty: {
             id: 'cp-daniella-almanca',
@@ -911,7 +938,7 @@ export async function obterContratoVigentePorImovel(
       return {
         id: 'lease-51002-902',
         property_id: propertyId,
-        family_id: familiaId || 'fam-bni',
+        family_id: familiaId || '',
         counterparty_id: 'cp-daniella-almanca',
         counterparty: {
           id: 'cp-daniella-almanca',
@@ -1049,7 +1076,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
       return [
         {
           id: 'acc-btg-4177348',
-          family_id: familiaId || 'fam-bni',
+          family_id: familiaId || '',
           bank_name: 'Banco BTG Pactual S.A.',
           bank_code: '208',
           agency: '0001',
@@ -1061,7 +1088,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
         },
         {
           id: 'acc-caixa-5784121967',
-          family_id: familiaId || 'fam-bni',
+          family_id: familiaId || '',
           bank_name: 'Caixa Econômica Federal',
           bank_code: '104',
           agency: '0167',
@@ -1073,7 +1100,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
         },
         {
           id: 'acc-caixa-repasse',
-          family_id: familiaId || 'fam-bni',
+          family_id: familiaId || '',
           bank_name: 'Caixa Econômica Federal',
           bank_code: '104',
           agency: '0167',
@@ -1091,7 +1118,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
     return [
       {
         id: 'acc-btg-4177348',
-        family_id: familiaId || 'fam-bni',
+        family_id: familiaId || '',
         bank_name: 'Banco BTG Pactual S.A.',
         bank_code: '208',
         agency: '0001',
@@ -1103,7 +1130,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
       },
       {
         id: 'acc-caixa-5784121967',
-        family_id: familiaId || 'fam-bni',
+        family_id: familiaId || '',
         bank_name: 'Caixa Econômica Federal',
         bank_code: '104',
         agency: '0167',
@@ -1115,7 +1142,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
       },
       {
         id: 'acc-caixa-repasse',
-        family_id: familiaId || 'fam-bni',
+        family_id: familiaId || '',
         bank_name: 'Caixa Econômica Federal',
         bank_code: '104',
         agency: '0167',

@@ -101,13 +101,15 @@ export async function supabaseRest<T = unknown>(
   const session = getStoredSession()
   const token = session?.access_token || cfg.anonKey
 
+  const targetSchema = options.schema || cfg.schema || DEFAULT_SUPABASE_SCHEMA
+
   const headers: Record<string, string> = {
     apikey: cfg.anonKey,
     Authorization: `Bearer ${token}`,
     Accept: 'application/json',
     'Content-Type': 'application/json',
-    'Accept-Profile': options.schema || cfg.schema,
-    'Content-Profile': options.schema || cfg.schema,
+    'Accept-Profile': targetSchema,
+    'Content-Profile': targetSchema,
     ...options.headers,
   }
 

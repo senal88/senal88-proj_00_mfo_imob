@@ -1,9 +1,10 @@
 // Tipos de situações de ocupação aceitos pelo banco (exatamente 7 valores)
+// Nota do usuário: O termo 'em_obra' foi expurgado para evitar conflito com benfeitorias em imóveis próprios.
 export type SituacaoOcupacao =
   | 'disponivel'
   | 'locado'
+  | 'em_construcao'
   | 'em_reforma'
-  | 'em_obra'
   | 'uso_proprio'
   | 'a_venda'
   | 'vendido'
@@ -61,6 +62,8 @@ export interface EntidadeProprietaria {
   familia_id: string
   nome: string
   sigla: string
+  display_name?: string
+  legal_name?: string
   cnpj?: string
 }
 
@@ -131,11 +134,19 @@ export interface Documento {
 }
 
 // 7 Situações com rótulos humanos exatos
+// Bloco 1, item 2:
+// disponivel = "Desocupado"
+// locado = "Ocupado (alugado)"
+// em_construcao = "Em construção (na planta / fase de aportes — estoque de terceiros)"
+// em_reforma = "Em reforma" (reformas/benfeitorias em imóvel próprio já concluído)
+// uso_proprio = "Uso próprio"
+// a_venda = "À venda"
+// vendido = "Vendido"
 export const SITUACAO_LABELS: Record<SituacaoOcupacao, string> = {
   disponivel: 'Desocupado',
-  locado: 'Locado',
+  locado: 'Ocupado (alugado)',
+  em_construcao: 'Em construção',
   em_reforma: 'Em reforma',
-  em_obra: 'Em obra',
   uso_proprio: 'Uso próprio',
   a_venda: 'À venda',
   vendido: 'Vendido',
@@ -154,13 +165,8 @@ export const SITUACAO_CONFIG: Record<
     hex: string
   }
 > = {
-  // Badges Apex Light:
-  // Verde = Ocupado (alugado)
-  // Amarelo/Âmbar = Desocupado
-  // Cinza = Em reforma
-  // Vermelho = Indisponível / Outros
   locado: {
-    label: 'Locado',
+    label: 'Ocupado (alugado)',
     descricao: 'Imóvel com contrato de locação ativo e vigência',
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100',
     btnClass: 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-sm',
@@ -179,25 +185,25 @@ export const SITUACAO_CONFIG: Record<
     borderClass: 'border-amber-300',
     hex: '#F59E0B',
   },
+  em_construcao: {
+    label: 'Em construção',
+    descricao: 'Na planta / fase de aportes — estoque de terceiros',
+    badgeClass: 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100',
+    btnClass: 'bg-amber-700 hover:bg-amber-800 text-white border-amber-700 shadow-sm',
+    dotClass: 'bg-amber-600',
+    bgLightClass: 'bg-amber-50/70',
+    borderClass: 'border-amber-300',
+    hex: '#D97706',
+  },
   em_reforma: {
     label: 'Em reforma',
-    descricao: 'Passando por melhorias, reparos ou modernização',
+    descricao: 'Reformas/benfeitorias em imóvel próprio já concluído',
     badgeClass: 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200',
     btnClass: 'bg-slate-600 hover:bg-slate-700 text-white border-slate-600 shadow-sm',
     dotClass: 'bg-slate-500',
     bgLightClass: 'bg-slate-50/70',
     borderClass: 'border-slate-300',
     hex: '#64748B',
-  },
-  em_obra: {
-    label: 'Em obra',
-    descricao: 'Em construção estrutural, fundação ou edificação',
-    badgeClass: 'bg-orange-50 text-orange-800 border-orange-300 hover:bg-orange-100',
-    btnClass: 'bg-orange-600 hover:bg-orange-700 text-white border-orange-600 shadow-sm',
-    dotClass: 'bg-orange-500',
-    bgLightClass: 'bg-orange-50/70',
-    borderClass: 'border-orange-300',
-    hex: '#EA580C',
   },
   uso_proprio: {
     label: 'Uso próprio',
@@ -243,14 +249,14 @@ export const TIPO_IMOVEL_LABELS: Record<TipoImovel, string> = {
   outro: 'Outro',
 }
 
-// Catálogo fechado de 20 tipos com rótulos em pt-BR
+// Catálogo fechado de tipos de documentos com rótulos em pt-BR
 export const TIPO_DOCUMENTO_LABELS: Record<TipoDocumento, string> = {
   matricula: 'Matrícula',
   escritura: 'Escritura',
-  espelho_iptu: 'Espelho do IPTU',
-  habite_se: 'Habite-se',
-  laudo_vistoria: 'Laudo de vistoria',
   contrato_locacao: 'Contrato de locação',
+  espelho_iptu: 'Espelho do IPTU',
+  laudo_vistoria: 'Laudo de vistoria / avaliação',
+  habite_se: 'Habite-se',
   aditivo_locacao: 'Aditivo de locação',
   distrato: 'Distrato',
   garantia_locaticia: 'Garantia locatícia',
@@ -268,28 +274,28 @@ export const TIPO_DOCUMENTO_LABELS: Record<TipoDocumento, string> = {
 }
 
 // Ordem de prioridade para derivação automática do documento principal:
-// matricula (1) → escritura (2) → contrato_locacao (3) → espelho_iptu (4) → qualquer outro (5)
+// "matricula -> escritura -> contrato_locacao -> espelho_iptu -> laudo_avaliacao -> outro"
 export const PRIORIDADE_TIPO_DOCUMENTO: Record<TipoDocumento, number> = {
   matricula: 1,
   escritura: 2,
   contrato_locacao: 3,
   espelho_iptu: 4,
-  habite_se: 5,
-  certidao_onus: 5,
-  certidao_negativa: 5,
-  apolice_seguro: 5,
-  aditivo_locacao: 5,
-  garantia_locaticia: 5,
-  distrato: 5,
-  laudo_vistoria: 5,
-  conta_condominio: 5,
-  conta_consumo: 5,
-  guia_tributo: 5,
-  comprovante_pagamento: 5,
-  boleto: 5,
-  correspondencia: 5,
-  foto_imovel: 5,
-  outro: 5,
+  laudo_vistoria: 5, // abrange laudos de avaliação / vistoria
+  habite_se: 6,
+  certidao_onus: 6,
+  certidao_negativa: 6,
+  apolice_seguro: 6,
+  aditivo_locacao: 6,
+  garantia_locaticia: 6,
+  distrato: 6,
+  conta_condominio: 6,
+  conta_consumo: 6,
+  guia_tributo: 6,
+  comprovante_pagamento: 6,
+  boleto: 6,
+  correspondencia: 6,
+  foto_imovel: 6,
+  outro: 7,
 }
 
 // Rótulos de review_status

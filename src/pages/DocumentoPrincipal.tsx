@@ -133,7 +133,7 @@ export default function DocumentoPrincipal() {
               <h2 className="text-xl font-bold text-white leading-tight">{imovel.display_name}</h2>
               <p className="text-xs text-blue-100 mt-0.5">
                 Código: {imovel.code} • Prioridade: Matrícula → Escritura → Contrato de locação →
-                Espelho IPTU → Outros
+                Espelho IPTU → Laudo de avaliação → Outros
               </p>
             </div>
           </div>

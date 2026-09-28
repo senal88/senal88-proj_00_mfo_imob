@@ -280,37 +280,48 @@ export default function Index() {
         </div>
       )}
 
-      {/* Listagem de Imóveis (Grid Hierárquico Apex Light) */}
+      {/* Listagem de Imóveis (Grid Hierárquico Apex Light) com Skeletons Proporcionais */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {[1, 2, 3, 4, 5, 6].map((n) => (
             <div
               key={n}
-              className="h-56 rounded-xl border border-gray-200 bg-white p-5 animate-pulse flex flex-col justify-between"
+              className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse flex flex-col justify-between space-y-4 shadow-2xs"
             >
               <div className="space-y-3">
-                <div className="h-5 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-full" />
+                <div className="flex items-center justify-between">
+                  <div className="h-6 w-24 bg-gray-200 rounded-full" />
+                  <div className="h-5 w-16 bg-blue-50 rounded" />
+                </div>
+                <div className="h-5 bg-gray-200 rounded w-4/5 mt-2" />
+                <div className="space-y-1.5 pt-1">
+                  <div className="h-3.5 bg-gray-100 rounded w-1/3" />
+                  <div className="h-3.5 bg-gray-100 rounded w-full" />
+                  <div className="h-3.5 bg-gray-100 rounded w-2/3" />
+                </div>
               </div>
-              <div className="h-8 bg-gray-100 rounded w-1/3" />
+              <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
+                <div className="h-3 bg-gray-100 rounded w-28" />
+                <div className="h-7 w-16 bg-blue-50 rounded-lg" />
+              </div>
             </div>
           ))}
         </div>
       ) : nosFiltrados.length === 0 ? (
-        /* Estado Vazio */
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-4">
+        /* Empty State Fiduciário */
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center shadow-2xs">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-[#0052cc] mb-4 border border-blue-100 shadow-xs">
             <Building className="h-8 w-8" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-bold text-[#00205b]">
             {busca
-              ? 'Nenhum imóvel ou unidade filha encontrada com esse termo'
-              : 'Nenhum imóvel cadastrado para esta família'}
+              ? 'Nenhum registro patrimonial encontrado para a busca'
+              : 'Nenhum imóvel retornado para esta família'}
           </h3>
-          <p className="mt-1 text-sm text-gray-500 max-w-md">
+          <p className="mt-1 text-sm text-gray-500 max-w-md leading-relaxed">
             {busca
-              ? `Não localizamos nenhum imóvel com o termo "${busca}". Verifique o código (ex: 51090, 51120) ou limpe a busca.`
-              : 'Comece adicionando o primeiro patrimônio imobiliário para gerenciar a ocupação e vincular documentos.'}
+              ? `A consulta ao schema imob não localizou imóveis com o termo "${busca}". Verifique o código (ex: 51002, 51120, 51090) ou limpe os filtros.`
+              : 'Os registros da tabela imob.property isolados por RLS da família não retornaram imóveis cadastrados ou sua sessão precisa ser renovada.'}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3 justify-center">
@@ -320,7 +331,7 @@ export default function Index() {
                 onClick={limparBusca}
                 className="border-gray-300 text-gray-700"
               >
-                Limpar busca
+                Limpar filtros de busca
               </Button>
             ) : (
               <Button
@@ -328,7 +339,7 @@ export default function Index() {
                 className="bg-[#00205b] hover:bg-[#001742] text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Cadastrar primeiro imóvel
+                Cadastrar imóvel patrimonial
               </Button>
             )}
           </div>
