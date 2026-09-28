@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { supabaseResetPassword } from '@/lib/supabaseClient'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function EsqueciSenha() {
   const [email, setEmail] = useState('')
@@ -22,7 +22,12 @@ export default function EsqueciSenha() {
 
     setLoading(true)
     try {
-      await supabaseResetPassword(email.trim())
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      })
+      if (error) {
+        throw error
+      }
       setEnviado(true)
       toast.success('Link de recuperação enviado com sucesso!')
     } catch (err: unknown) {

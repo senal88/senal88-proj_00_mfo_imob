@@ -30,6 +30,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/esqueci-senha" element={<EsqueciSenha />} />
           <Route path="/redefinir-senha" element={<RedefinirSenha />} />
+          <Route path="/auth/callback" element={<Navigate to="/redefinir-senha" replace />} />
 
           {/* Rotas Autenticadas com Isolamento RLS por Família */}
           <Route element={<ProtectedRoute />}>

@@ -26,13 +26,8 @@ import {
   EconomicIndex,
   LeaseAdjustment,
 } from '@/types/imob'
-import {
-  supabaseRest,
-  getSupabaseConfig,
-  getStoredSession,
-  setStoredSession,
-  StoredSession,
-} from './supabaseClient'
+import type { User } from '@supabase/supabase-js'
+import { supabase } from './supabaseClient'
 
 const STORAGE_KEY_AUTH = 'mfo_imob_auth_user_v2'
 
@@ -64,10 +59,19 @@ export function setStoredUser(user: Usuario | null) {
 /**
  * Resolve os dados do usuário a partir da sessão do Supabase (family, family_member ou metadados)
  */
-export async function resolverUsuarioLogado(session: StoredSession): Promise<Usuario> {
-  const userId = session.user.id
-  const email = session.user.email || ''
-  const metadata = session.user.user_metadata || {}
+export async function resolverUsuarioLogado(
+  userOrSession:
+    | User
+    | { id: string; email?: string; user_metadata?: Record<string, unknown> }
+    | { user: { id: string; email?: string; user_metadata?: Record<string, unknown> } },
+): Promise<Usuario> {
+  const user: { id: string; email?: string; user_metadata?: Record<string, unknown> } =
+    'user' in userOrSession && userOrSession.user
+      ? userOrSession.user
+      : (userOrSession as { id: string; email?: string; user_metadata?: Record<string, unknown> })
+  const userId = user.id
+  const email = user.email || ''
+  const metadata = (user.user_metadata || {}) as Record<string, unknown>
 
   let familiaId = (metadata.familia_id as string) || (metadata.family_id as string) || ''
   let familiaNome = (metadata.familia_nome as string) || (metadata.family_name as string) || ''
@@ -76,18 +80,17 @@ export async function resolverUsuarioLogado(session: StoredSession): Promise<Usu
 
   // Tenta consultar a tabela family_member / family no schema imob
   try {
-    const members = await supabaseRest<
-      Array<{
-        id?: string
+    const { data: members, error } = await supabase
+      .from('family_member')
+      .select('*, family:family_id(*)')
+      .eq('user_id', userId)
+
+    if (!error && members && members.length > 0) {
+      const m = members[0] as {
         family_id?: string
-        user_id?: string
         role?: string
         family?: { id?: string; name?: string; display_name?: string }
-      }>
-    >(`family_member?user_id=eq.${userId}&select=*,family:family_id(*)`)
-
-    if (members && members.length > 0) {
-      const m = members[0]
+      }
       if (m.family_id) familiaId = m.family_id
       if (m.family?.name || m.family?.display_name) {
         familiaNome = m.family.display_name || m.family.name || familiaNome
@@ -97,13 +100,15 @@ export async function resolverUsuarioLogado(session: StoredSession): Promise<Usu
   } catch {
     // Se a query falhar (RLS ou formato de relação), tenta query direta na tabela family
     try {
-      const families =
-        await supabaseRest<Array<{ id: string; name?: string; display_name?: string }>>(
-          'family?limit=1',
-        )
+      const { data: families } = await supabase
+        .from('family')
+        .select('id, name, display_name')
+        .limit(1)
+
       if (families && families.length > 0) {
-        familiaId = families[0].id
-        familiaNome = families[0].display_name || families[0].name || familiaNome
+        const fam = families[0] as { id: string; name?: string; display_name?: string }
+        familiaId = fam.id
+        familiaNome = fam.display_name || fam.name || familiaNome
       }
     } catch {
       // noop - fallback para metadados ou padrão
@@ -140,55 +145,55 @@ export async function resolverUsuarioLogado(session: StoredSession): Promise<Usu
 // --- ENTIDADES PROPRIETÁRIAS (entity) ---
 
 export async function listarEntidades(familiaId?: string): Promise<EntidadeProprietaria[]> {
-  const cfg = getSupabaseConfig()
-  if (!cfg.url) {
-    return []
-  }
-
   try {
-    let query = 'entity?select=id,display_name,legal_name,family_id,tax_id'
+    let builder = supabase
+      .from('entity')
+      .select('id, display_name, legal_name, family_id, tax_id')
+      .order('display_name', { ascending: true })
+
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
-    query += '&order=display_name.asc'
 
-    let data: Array<{
-      id: string
-      family_id?: string
-      display_name?: string
-      legal_name?: string
-      name?: string
-      sigla?: string
-      code?: string
-      cnpj?: string
-      tax_id?: string
-    }> | null = null
+    const { data, error } = await builder
 
-    try {
-      data = await supabaseRest(query)
-    } catch {
-      // Fallback para select=* caso alguma coluna opcional varie
-      let fallbackQuery = 'entity?select=*'
+    let rows: Array<Record<string, unknown>> = []
+
+    if (error) {
+      // Fallback para select('*') caso alguma coluna opcional varie
+      let fallbackBuilder = supabase.from('entity').select('*')
       if (familiaId) {
-        fallbackQuery += `&family_id=eq.${encodeURIComponent(familiaId)}`
+        fallbackBuilder = fallbackBuilder.eq('family_id', familiaId)
       }
-      data = await supabaseRest(fallbackQuery)
+      const { data: fallbackData } = await fallbackBuilder
+      rows = (fallbackData as Array<Record<string, unknown>>) || []
+    } else {
+      rows = (data as Array<Record<string, unknown>>) || []
     }
 
-    if (!data || !Array.isArray(data)) return []
+    if (!rows || !Array.isArray(rows)) return []
 
-    return data.map((d) => {
-      const nomeExibicao = d.display_name || d.name || d.legal_name || 'Entidade'
+    return rows.map((d) => {
+      const display_name = (d.display_name as string) || undefined
+      const legal_name = (d.legal_name as string) || undefined
+      const name = (d.name as string) || undefined
+      const siglaCol = (d.sigla as string) || undefined
+      const code = (d.code as string) || undefined
+      const cnpj = (d.cnpj as string) || undefined
+      const tax_id = (d.tax_id as string) || undefined
+      const family_id = (d.family_id as string) || undefined
+
+      const nomeExibicao = display_name || name || legal_name || 'Entidade'
       const sigla =
-        d.sigla || d.code || (d.display_name && d.display_name.length <= 10 ? d.display_name : '')
+        siglaCol || code || (display_name && display_name.length <= 10 ? display_name : '')
       return {
-        id: d.id,
-        familia_id: d.family_id || familiaId || '',
+        id: String(d.id),
+        familia_id: family_id || familiaId || '',
         nome: nomeExibicao,
         sigla: sigla || 'BNI',
-        display_name: d.display_name || nomeExibicao,
-        legal_name: d.legal_name || nomeExibicao,
-        cnpj: d.cnpj || d.tax_id || undefined,
+        display_name: display_name || nomeExibicao,
+        legal_name: legal_name || nomeExibicao,
+        cnpj: cnpj || tax_id || undefined,
       }
     })
   } catch (err) {
@@ -200,25 +205,26 @@ export async function listarEntidades(familiaId?: string): Promise<EntidadePropr
 // --- IMÓVEIS (property) ---
 
 export async function listarImoveis(familiaId?: string, busca?: string): Promise<Imovel[]> {
-  const cfg = getSupabaseConfig()
-  if (!cfg.url) {
-    return []
-  }
-
   try {
     // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
-    let query = 'property?select=*,entity:entity_id(id,display_name,legal_name)'
+    let builder = supabase
+      .from('property')
+      .select('*, entity:entity_id(id, display_name, legal_name)')
+      .order('code', { ascending: true })
+      .order('display_name', { ascending: true })
 
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
 
-    query += '&order=code.asc,display_name.asc'
-
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
+    const { data: rows, error } = await builder
+    if (error) {
+      console.error('Erro ao listar imóveis do Supabase:', error)
+      return []
+    }
     if (!rows || !Array.isArray(rows)) return []
 
-    const imoveis = rows.map(mapDbToImovel)
+    const imoveis = (rows as Array<Record<string, unknown>>).map(mapDbToImovel)
 
     // Se houver termo de busca, filtra localmente para garantir correspondência tanto no pai quanto na filha
     if (busca && busca.trim()) {
@@ -248,20 +254,25 @@ export async function listarImoveis(familiaId?: string, busca?: string): Promise
  * Retorna todos os imóveis da família para montar a árvore hierárquica completa
  */
 export async function listarTodosImoveisParaHierarquia(familiaId?: string): Promise<Imovel[]> {
-  const cfg = getSupabaseConfig()
-  if (!cfg.url) return []
-
   try {
     // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
-    let query = 'property?select=*,entity:entity_id(id,display_name,legal_name)'
-    if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
-    }
-    query += '&order=code.asc,display_name.asc'
+    let builder = supabase
+      .from('property')
+      .select('*, entity:entity_id(id, display_name, legal_name)')
+      .order('code', { ascending: true })
+      .order('display_name', { ascending: true })
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
+    if (familiaId) {
+      builder = builder.eq('family_id', familiaId)
+    }
+
+    const { data: rows, error } = await builder
+    if (error) {
+      console.warn('Erro ao consultar todos os imóveis para hierarquia:', error)
+      return []
+    }
     if (!rows || !Array.isArray(rows)) return []
-    return rows.map(mapDbToImovel)
+    return (rows as Array<Record<string, unknown>>).map(mapDbToImovel)
   } catch (err) {
     console.warn('Erro ao consultar todos os imóveis para hierarquia:', err)
     return []
@@ -269,24 +280,27 @@ export async function listarTodosImoveisParaHierarquia(familiaId?: string): Prom
 }
 
 export async function obterImovelPorId(id: string, familiaId?: string): Promise<Imovel | null> {
-  const cfg = getSupabaseConfig()
-  if (!cfg.url) {
-    return null
-  }
-
   try {
     // Bloco 2: embed no schema real da tabela imob.entity: entity:entity_id(id, display_name, legal_name)
-    let query = `property?id=eq.${encodeURIComponent(id)}&select=*,entity:entity_id(id,display_name,legal_name)`
+    let builder = supabase
+      .from('property')
+      .select('*, entity:entity_id(id, display_name, legal_name)')
+      .eq('id', id)
+
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
+    const { data: rows, error } = await builder
+    if (error) {
+      console.error(`Erro ao obter imóvel ${id} no Supabase:`, error)
+      return null
+    }
     if (!rows || rows.length === 0) {
       return null
     }
 
-    return mapDbToImovel(rows[0])
+    return mapDbToImovel(rows[0] as Record<string, unknown>)
   } catch (err) {
     console.error(`Erro ao obter imóvel ${id} no Supabase:`, err)
     return null
@@ -345,31 +359,28 @@ export async function salvarImovel(
     }
 
     let rows: Array<Record<string, unknown>> | null = null
-    try {
-      rows = await supabaseRest<Array<Record<string, unknown>>>(
-        `property?id=eq.${encodeURIComponent(dados.id)}`,
-        {
-          method: 'PATCH',
-          body: payload,
-          prefer: 'return=representation',
-        },
-      )
-    } catch (patchErr) {
-      // Se falhar por parent_property_id não existir como coluna física (defensivo)
-      if (String(patchErr).includes('parent_property_id')) {
+    const { data: patchData, error: patchErr } = await supabase
+      .from('property')
+      .update(payload)
+      .eq('id', dados.id)
+      .select('*')
+
+    if (patchErr) {
+      if (String(patchErr.message || '').includes('parent_property_id')) {
         const fallbackPayload = { ...payload }
         delete fallbackPayload.parent_property_id
-        rows = await supabaseRest<Array<Record<string, unknown>>>(
-          `property?id=eq.${encodeURIComponent(dados.id)}`,
-          {
-            method: 'PATCH',
-            body: fallbackPayload,
-            prefer: 'return=representation',
-          },
-        )
+        const { data: fallbackPatchData, error: fallbackErr } = await supabase
+          .from('property')
+          .update(fallbackPayload)
+          .eq('id', dados.id)
+          .select('*')
+        if (fallbackErr) throw fallbackErr
+        rows = (fallbackPatchData as Array<Record<string, unknown>>) || null
       } else {
         throw patchErr
       }
+    } else {
+      rows = (patchData as Array<Record<string, unknown>>) || null
     }
 
     if (mudouStatus) {
@@ -409,24 +420,26 @@ export async function salvarImovel(
     }
 
     let rows: Array<Record<string, unknown>> | null = null
-    try {
-      rows = await supabaseRest<Array<Record<string, unknown>>>('property', {
-        method: 'POST',
-        body: payload,
-        prefer: 'return=representation',
-      })
-    } catch (postErr) {
-      if (String(postErr).includes('parent_property_id')) {
+    const { data: postData, error: postErr } = await supabase
+      .from('property')
+      .insert(payload)
+      .select('*')
+
+    if (postErr) {
+      if (String(postErr.message || '').includes('parent_property_id')) {
         const fallbackPayload = { ...payload }
         delete fallbackPayload.parent_property_id
-        rows = await supabaseRest<Array<Record<string, unknown>>>('property', {
-          method: 'POST',
-          body: fallbackPayload,
-          prefer: 'return=representation',
-        })
+        const { data: fallbackPostData, error: fallbackErr } = await supabase
+          .from('property')
+          .insert(fallbackPayload)
+          .select('*')
+        if (fallbackErr) throw fallbackErr
+        rows = (fallbackPostData as Array<Record<string, unknown>>) || null
       } else {
         throw postErr
       }
+    } else {
+      rows = (postData as Array<Record<string, unknown>>) || null
     }
 
     const novo = rows && rows.length > 0 ? mapDbToImovel(rows[0]) : null
@@ -453,12 +466,19 @@ export async function salvarImovel(
 
 export async function listarHistoricoStatus(propertyId: string): Promise<PropertyStatusHistory[]> {
   try {
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(
-      `property_status_history?property_id=eq.${encodeURIComponent(propertyId)}&order=created_at.desc`,
-    )
+    const { data: rows, error } = await supabase
+      .from('property_status_history')
+      .select('*')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.warn(`Erro ao consultar histórico de ocupação do imóvel ${propertyId}:`, error)
+      return []
+    }
     if (!rows || !Array.isArray(rows)) return []
 
-    return rows.map((r) => ({
+    return (rows as Array<Record<string, unknown>>).map((r) => ({
       id: String(r.id),
       property_id: String(r.property_id),
       status: r.status as SituacaoOcupacao,
@@ -493,16 +513,12 @@ export async function registrarHistoricoStatus(params: {
     created_at: now,
   }
 
-  const rows = await supabaseRest<Array<Record<string, unknown>>>('property_status_history', {
-    method: 'POST',
-    body: payload,
-    prefer: 'return=representation',
-  })
+  const { data: rows } = await supabase.from('property_status_history').insert(payload).select('*')
 
   window.dispatchEvent(new Event('mfo_status_history_changed'))
 
   if (rows && rows.length > 0) {
-    const r = rows[0]
+    const r = rows[0] as Record<string, unknown>
     return {
       id: String(r.id),
       property_id: String(r.property_id),
@@ -536,17 +552,14 @@ export async function alterarSituacaoImovel(params: {
   const now = new Date().toISOString()
   const today = now.split('T')[0]
 
-  const rows = await supabaseRest<Array<Record<string, unknown>>>(
-    `property?id=eq.${encodeURIComponent(params.id)}`,
-    {
-      method: 'PATCH',
-      body: {
-        status: params.novaSituacao,
-        updated_at: now,
-      },
-      prefer: 'return=representation',
-    },
-  )
+  const { data: rows } = await supabase
+    .from('property')
+    .update({
+      status: params.novaSituacao,
+      updated_at: now,
+    })
+    .eq('id', params.id)
+    .select('*')
 
   // Grava histórico
   await registrarHistoricoStatus({
@@ -561,7 +574,7 @@ export async function alterarSituacaoImovel(params: {
   window.dispatchEvent(new Event('mfo_imoveis_changed'))
 
   if (rows && rows.length > 0) {
-    return mapDbToImovel(rows[0])
+    return mapDbToImovel(rows[0] as Record<string, unknown>)
   }
   return (await obterImovelPorId(params.id))!
 }
@@ -574,17 +587,27 @@ export async function listarDocumentos(params?: {
   incluirSubstituidos?: boolean
 }): Promise<Documento[]> {
   try {
-    let query = 'document?select=*'
+    let builder = supabase
+      .from('document')
+      .select('*')
+      .order('document_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+
     if (params?.propertyId) {
-      query += `&property_id=eq.${encodeURIComponent(params.propertyId)}`
+      builder = builder.eq('property_id', params.propertyId)
     }
     if (params?.familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(params.familiaId)}`
+      builder = builder.eq('family_id', params.familiaId)
     }
-    query += '&order=document_date.desc.nullslast,created_at.desc'
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    return rows && Array.isArray(rows) ? rows.map(mapDbToDocumento) : []
+    const { data: rows, error } = await builder
+    if (error) {
+      console.warn('Erro ao consultar documentos no Supabase:', error)
+      return []
+    }
+    return rows && Array.isArray(rows)
+      ? (rows as Array<Record<string, unknown>>).map(mapDbToDocumento)
+      : []
   } catch (err) {
     console.warn('Erro ao consultar documentos no Supabase:', err)
     return []
@@ -753,16 +776,12 @@ export async function vincularDocumento(params: VincularDocumentoParams): Promis
     created_at: now,
   }
 
-  const rows = await supabaseRest<Array<Record<string, unknown>>>('document', {
-    method: 'POST',
-    body: payload,
-    prefer: 'return=representation',
-  })
+  const { data: rows } = await supabase.from('document').insert(payload).select('*')
 
   window.dispatchEvent(new Event('mfo_documentos_changed'))
 
   if (rows && rows.length > 0) {
-    return mapDbToDocumento(rows[0])
+    return mapDbToDocumento(rows[0] as Record<string, unknown>)
   }
 
   return {
@@ -787,15 +806,15 @@ export async function vincularDocumento(params: VincularDocumentoParams): Promis
 
 export async function removerDocumento(id: string, familiaId?: string): Promise<boolean> {
   try {
-    let query = `document?id=eq.${encodeURIComponent(id)}`
+    let builder = supabase.from('document').delete().eq('id', id)
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
 
-    await supabaseRest(query, {
-      method: 'DELETE',
-      prefer: 'return=minimal',
-    })
+    const { error } = await builder
+    if (error) {
+      throw error
+    }
 
     window.dispatchEvent(new Event('mfo_documentos_changed'))
     return true
@@ -851,28 +870,38 @@ export async function obterContratoVigentePorImovel(
   propertyId: string,
   familiaId?: string,
 ): Promise<Lease | null> {
-  const cfg = getSupabaseConfig()
-  if (!cfg.url) return null
-
   try {
     // Tenta primeiro com join na tabela counterparty
-    let query = `lease?select=*,counterparty:counterparty_id(*)&property_id=eq.${encodeURIComponent(propertyId)}`
+    let builder = supabase
+      .from('lease')
+      .select('*, counterparty:counterparty_id(*)')
+      .eq('property_id', propertyId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
-    query += '&order=created_at.desc&limit=1'
 
     let rows: Array<Record<string, unknown>> | null = null
-    try {
-      rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    } catch {
+    const { data, error } = await builder
+
+    if (error) {
       // Fallback sem join caso a foreign key use outro alias
-      let fallbackQuery = `lease?select=*&property_id=eq.${encodeURIComponent(propertyId)}`
+      let fallbackBuilder = supabase
+        .from('lease')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
       if (familiaId) {
-        fallbackQuery += `&family_id=eq.${encodeURIComponent(familiaId)}`
+        fallbackBuilder = fallbackBuilder.eq('family_id', familiaId)
       }
-      fallbackQuery += '&order=created_at.desc&limit=1'
-      rows = await supabaseRest<Array<Record<string, unknown>>>(fallbackQuery)
+      const { data: fallbackData } = await fallbackBuilder
+      rows = (fallbackData as Array<Record<string, unknown>>) || null
+    } else {
+      rows = (data as Array<Record<string, unknown>>) || null
     }
 
     if (!rows || rows.length === 0) {
@@ -920,9 +949,11 @@ export async function obterContratoVigentePorImovel(
       (!leaseData.counterparty || typeof leaseData.counterparty !== 'object')
     ) {
       try {
-        const cpRows = await supabaseRest<Array<Record<string, unknown>>>(
-          `counterparty?id=eq.${encodeURIComponent(cpId)}&limit=1`,
-        )
+        const { data: cpRows } = await supabase
+          .from('counterparty')
+          .select('*')
+          .eq('id', cpId)
+          .limit(1)
         if (cpRows && cpRows.length > 0) {
           leaseData.counterparty = cpRows[0]
         }
@@ -972,22 +1003,29 @@ export async function obterContratoVigentePorImovel(
 
 export async function listarContratos(familiaId?: string): Promise<Lease[]> {
   try {
-    let query = 'lease?select=*,counterparty:counterparty_id(*)'
+    let builder = supabase
+      .from('lease')
+      .select('*, counterparty:counterparty_id(*)')
+      .order('created_at', { ascending: false })
+
     if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
+      builder = builder.eq('family_id', familiaId)
     }
-    query += '&order=created_at.desc'
 
     let rows: Array<Record<string, unknown>> | null = null
-    try {
-      rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    } catch {
-      let fallbackQuery = 'lease?select=*'
+    const { data, error } = await builder
+    if (error) {
+      let fallbackBuilder = supabase
+        .from('lease')
+        .select('*')
+        .order('created_at', { ascending: false })
       if (familiaId) {
-        fallbackQuery += `&family_id=eq.${encodeURIComponent(familiaId)}`
+        fallbackBuilder = fallbackBuilder.eq('family_id', familiaId)
       }
-      fallbackQuery += '&order=created_at.desc'
-      rows = await supabaseRest<Array<Record<string, unknown>>>(fallbackQuery)
+      const { data: fallbackData } = await fallbackBuilder
+      rows = (fallbackData as Array<Record<string, unknown>>) || null
+    } else {
+      rows = (data as Array<Record<string, unknown>>) || null
     }
 
     if (!rows || !Array.isArray(rows)) return []
@@ -1006,20 +1044,20 @@ export async function listarCobrancasLocacao(params?: {
   familiaId?: string
 }): Promise<LeaseCharge[]> {
   try {
-    let query = 'lease_charge?select=*'
+    let builder = supabase.from('lease_charge').select('*').order('due_date', { ascending: false })
+
     if (params?.propertyId) {
-      query += `&property_id=eq.${encodeURIComponent(params.propertyId)}`
+      builder = builder.eq('property_id', params.propertyId)
     }
     if (params?.leaseId) {
-      query += `&lease_id=eq.${encodeURIComponent(params.leaseId)}`
+      builder = builder.eq('lease_id', params.leaseId)
     }
     if (params?.familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(params.familiaId)}`
+      builder = builder.eq('family_id', params.familiaId)
     }
-    query += '&order=due_date.desc'
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    const { data: rows, error } = await builder
+    if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
       if (params?.propertyId === 'prop-51002' || !params?.propertyId) {
         return [
           {
@@ -1039,7 +1077,7 @@ export async function listarCobrancasLocacao(params?: {
       }
       return []
     }
-    return rows.map(mapDbToLeaseCharge)
+    return (rows as Array<Record<string, unknown>>).map(mapDbToLeaseCharge)
   } catch (err) {
     console.warn('Erro ao listar cobranças de locação:', err)
     return [
@@ -1064,14 +1102,14 @@ export async function listarCobrancasLocacao(params?: {
 
 export async function listarContasBancarias(familiaId?: string): Promise<BankAccount[]> {
   try {
-    let query = 'bank_account?select=*'
-    if (familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(familiaId)}`
-    }
-    query += '&order=bank_name.asc'
+    let builder = supabase.from('bank_account').select('*').order('bank_name', { ascending: true })
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    if (familiaId) {
+      builder = builder.eq('family_id', familiaId)
+    }
+
+    const { data: rows, error } = await builder
+    if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
       // Fallback com as 3 contas reais solicitadas caso a tabela ainda não devolva linhas
       return [
         {
@@ -1112,7 +1150,7 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
         },
       ]
     }
-    return rows.map(mapDbToBankAccount)
+    return (rows as Array<Record<string, unknown>>).map(mapDbToBankAccount)
   } catch (err) {
     console.warn('Erro ao consultar contas bancárias:', err)
     return [
@@ -1163,17 +1201,20 @@ export async function listarExtratosBancarios(params?: {
   familiaId?: string
 }): Promise<BankStatement[]> {
   try {
-    let query = 'bank_statement?select=*'
+    let builder = supabase
+      .from('bank_statement')
+      .select('*')
+      .order('created_at', { ascending: false })
+
     if (params?.bankAccountId) {
-      query += `&bank_account_id=eq.${encodeURIComponent(params.bankAccountId)}`
+      builder = builder.eq('bank_account_id', params.bankAccountId)
     }
     if (params?.familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(params.familiaId)}`
+      builder = builder.eq('family_id', params.familiaId)
     }
-    query += '&order=created_at.desc'
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    const { data: rows, error } = await builder
+    if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
       return [
         {
           id: 'stmt-2026-08',
@@ -1189,7 +1230,7 @@ export async function listarExtratosBancarios(params?: {
         },
       ]
     }
-    return rows.map(mapDbToBankStatement)
+    return (rows as Array<Record<string, unknown>>).map(mapDbToBankStatement)
   } catch (err) {
     console.warn('Erro ao consultar extratos bancários:', err)
     return [
@@ -1218,23 +1259,27 @@ export async function listarTransacoes(params?: {
   familiaId?: string
 }): Promise<Transaction[]> {
   try {
-    let query = 'transaction?select=*'
+    let builder = supabase
+      .from('transaction')
+      .select('*')
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+
     if (params?.bankAccountId) {
-      query += `&bank_account_id=eq.${encodeURIComponent(params.bankAccountId)}`
+      builder = builder.eq('bank_account_id', params.bankAccountId)
     }
     if (params?.statementId) {
-      query += `&statement_id=eq.${encodeURIComponent(params.statementId)}`
+      builder = builder.eq('statement_id', params.statementId)
     }
     if (params?.propertyId) {
-      query += `&property_id=eq.${encodeURIComponent(params.propertyId)}`
+      builder = builder.eq('property_id', params.propertyId)
     }
     if (params?.familiaId) {
-      query += `&family_id=eq.${encodeURIComponent(params.familiaId)}`
+      builder = builder.eq('family_id', params.familiaId)
     }
-    query += '&order=date.desc,created_at.desc'
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    const { data: rows, error } = await builder
+    if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
       return [
         {
           id: 'tx-20260805-51002-902',
@@ -1254,7 +1299,7 @@ export async function listarTransacoes(params?: {
         },
       ]
     }
-    return rows.map(mapDbToTransaction)
+    return (rows as Array<Record<string, unknown>>).map(mapDbToTransaction)
   } catch (err) {
     console.warn('Erro ao consultar transações:', err)
     return [
@@ -1322,9 +1367,12 @@ export function calcularAcumulado12Meses(
 
 export async function listarIndicesEconomicos(): Promise<EconomicIndex[]> {
   try {
-    const query = 'economic_index?select=*&order=date.desc'
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+    const { data: rows, error } = await supabase
+      .from('economic_index')
+      .select('*')
+      .order('date', { ascending: false })
+
+    if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
       // Fallback robusto simulando as 24 medições históricas reais do BACEN SGS
       const fallback24: EconomicIndex[] = []
       const meses = [
@@ -1397,7 +1445,7 @@ export async function listarIndicesEconomicos(): Promise<EconomicIndex[]> {
       }))
     }
 
-    const mapped = rows.map(mapDbToEconomicIndex)
+    const mapped = (rows as Array<Record<string, unknown>>).map(mapDbToEconomicIndex)
     // Calcula o acumulado real dos 12 meses sobre a série histórica retornada pelo banco
     const ipca12m = calcularAcumulado12Meses(mapped, 'IPCA')
     const igpm12m = calcularAcumulado12Meses(mapped, 'IGP-M')
@@ -1441,15 +1489,19 @@ export async function listarIndicesEconomicos(): Promise<EconomicIndex[]> {
 
 export async function listarReajustesContrato(leaseId?: string): Promise<LeaseAdjustment[]> {
   try {
-    let query = 'lease_adjustment?select=*'
-    if (leaseId) {
-      query += `&lease_id=eq.${encodeURIComponent(leaseId)}`
-    }
-    query += '&order=effective_date.desc,created_at.desc'
+    let builder = supabase
+      .from('lease_adjustment')
+      .select('*')
+      .order('effective_date', { ascending: false })
+      .order('created_at', { ascending: false })
 
-    const rows = await supabaseRest<Array<Record<string, unknown>>>(query)
-    if (!rows || !Array.isArray(rows)) return []
-    return rows.map(mapDbToLeaseAdjustment)
+    if (leaseId) {
+      builder = builder.eq('lease_id', leaseId)
+    }
+
+    const { data: rows, error } = await builder
+    if (error || !rows || !Array.isArray(rows)) return []
+    return (rows as Array<Record<string, unknown>>).map(mapDbToLeaseAdjustment)
   } catch (err) {
     console.warn('Erro ao consultar reajustes de locação:', err)
     return []
@@ -1486,44 +1538,38 @@ export async function registrarReajusteContrato(dados: {
   }
 
   // Grava em lease_adjustment
-  const rows = await supabaseRest<Array<Record<string, unknown>>>('lease_adjustment', {
-    method: 'POST',
-    body: payload,
-    prefer: 'return=representation',
-  })
+  const { data: rows } = await supabase.from('lease_adjustment').insert(payload).select('*')
 
   // Atualiza o valor do aluguel em lease caso a coluna exista
   try {
-    await supabaseRest(`lease?id=eq.${encodeURIComponent(dados.lease_id)}`, {
-      method: 'PATCH',
-      body: {
+    const { error: patchError } = await supabase
+      .from('lease')
+      .update({
         monthly_rent: dados.new_rent,
         value: dados.new_rent,
         rent_value: dados.new_rent,
         updated_at: now,
-      },
-      prefer: 'return=minimal',
-    })
-  } catch {
-    // Se alguma coluna não existir, tenta atualizar com monthly_rent apenas
-    try {
-      await supabaseRest(`lease?id=eq.${encodeURIComponent(dados.lease_id)}`, {
-        method: 'PATCH',
-        body: {
+      })
+      .eq('id', dados.lease_id)
+
+    if (patchError) {
+      // Se alguma coluna não existir, tenta atualizar com monthly_rent apenas
+      await supabase
+        .from('lease')
+        .update({
           monthly_rent: dados.new_rent,
           updated_at: now,
-        },
-        prefer: 'return=minimal',
-      })
-    } catch {
-      // noop
+        })
+        .eq('id', dados.lease_id)
     }
+  } catch {
+    // noop
   }
 
   window.dispatchEvent(new Event('mfo_lease_changed'))
 
   if (rows && rows.length > 0) {
-    return mapDbToLeaseAdjustment(rows[0])
+    return mapDbToLeaseAdjustment(rows[0] as Record<string, unknown>)
   }
 
   return {

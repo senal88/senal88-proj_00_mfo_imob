@@ -1,12 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Usuario } from '@/types/imob'
 import { getStoredUser, setStoredUser, resolverUsuarioLogado } from '@/lib/imobDb'
-import {
-  supabaseSignIn,
-  supabaseSignOut,
-  getStoredSession,
-  getSupabaseConfig,
-} from '@/lib/supabaseClient'
+import type { Session, User } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabaseClient'
 
 interface AuthContextType {
   usuario: Usuario | null
@@ -21,18 +17,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [usuario, setUsuario] = useState<Usuario | null>(() => getStoredUser())
   const [isLoading, setIsLoading] = useState(false)
 
-  // Ao montar, sincroniza se já houver sessão salva
   useEffect(() => {
-    const session = getStoredSession()
-    if (session && !usuario) {
-      resolverUsuarioLogado(session)
-        .then((u) => setUsuario(u))
-        .catch(() => {
-          // Mantém o armazenado localmente caso a chamada de rede falhe
-          setUsuario(getStoredUser())
-        })
+    let isMounted = true
+
+    // Verifica sessão existente ao carregar
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return
+      if (session?.user) {
+        resolverUsuarioLogado(session.user)
+          .then((u) => {
+            if (isMounted) setUsuario(u)
+          })
+          .catch(() => {
+            if (isMounted) setUsuario(getStoredUser())
+          })
+      } else {
+        setStoredUser(null)
+        setUsuario(null)
+      }
+    })
+
+    // Ouve mudanças de auth do Supabase
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session: Session | null) => {
+      if (!isMounted) return
+      if (session?.user) {
+        try {
+          const u = await resolverUsuarioLogado(session.user)
+          if (isMounted) setUsuario(u)
+        } catch {
+          if (isMounted) setUsuario(getStoredUser())
+        }
+      } else {
+        setStoredUser(null)
+        if (isMounted) setUsuario(null)
+      }
+    })
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
     }
-  }, [usuario])
+  }, [])
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -44,22 +71,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, senha?: string): Promise<boolean> => {
     setIsLoading(true)
-    const cfg = getSupabaseConfig()
 
     try {
-      if (!cfg.url || !cfg.anonKey) {
-        throw new Error(
-          'Configuração de servidor ausente — contate o suporte para verificar as variáveis do Supabase.',
-        )
-      }
-
       if (!senha) {
         throw new Error('Informe sua senha de acesso.')
       }
 
-      // Autentica diretamente no Supabase self-hosted
-      const session = await supabaseSignIn(email.trim(), senha)
-      const user = await resolverUsuarioLogado(session)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: senha,
+      })
+
+      if (error) {
+        throw error
+      }
+
+      if (!data.user) {
+        throw new Error('Usuário não retornado após autenticação.')
+      }
+
+      const user = await resolverUsuarioLogado(data.user)
       setUsuario(user)
       setIsLoading(false)
       return true
@@ -70,7 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   const logout = () => {
-    supabaseSignOut()
+    supabase.auth.signOut().catch(() => {
+      // noop
+    })
     setStoredUser(null)
     setUsuario(null)
   }

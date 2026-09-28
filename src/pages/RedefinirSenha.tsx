@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { supabaseUpdatePassword } from '@/lib/supabaseClient'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function RedefinirSenha() {
   const navigate = useNavigate()
@@ -35,7 +35,10 @@ export default function RedefinirSenha() {
 
     setLoading(true)
     try {
-      await supabaseUpdatePassword(senha)
+      const { error } = await supabase.auth.updateUser({ password: senha })
+      if (error) {
+        throw error
+      }
       setSucesso(true)
       toast.success('Senha redefinida com sucesso!')
     } catch (err: unknown) {
