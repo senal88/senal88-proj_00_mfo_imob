@@ -40,7 +40,7 @@ export default function ImovelForm() {
   // - iptu_number (opcional) -> inscrição cadastral IPTU
   // - area_private_m2 (número, opcional) -> área privativa em m²
   // - status -> situação do imóvel (exatamente os 7 valores: disponivel, locado, em_construcao, em_reforma, uso_proprio, a_venda, vendido)
-  // - accounting_nature (texto, opcional: renda, estoque, uso_proprio, em_obra)
+  // - accounting_nature (texto, opcional: renda, estoque, uso_proprio)
   // - entity_id (obrigatório) -> entidade proprietária (pré-selecionar BNI)
   // ATENÇÃO: NÃO existe coluna de observações no banco. Campo observações removido.
 
@@ -492,9 +492,7 @@ export default function ImovelForm() {
                   <Label htmlFor="accounting_nature" className="text-xs font-bold text-gray-700">
                     Natureza contábil
                   </Label>
-                  <span className="text-[10px] text-gray-400">
-                    renda, estoque, uso_proprio, em_obra
-                  </span>
+                  <span className="text-[10px] text-gray-400">renda, estoque, uso_proprio</span>
                 </div>
                 <Select value={accountingNature} onValueChange={setAccountingNature}>
                   <SelectTrigger id="accounting_nature" className="h-11 bg-gray-50/50 text-sm">
@@ -505,9 +503,6 @@ export default function ImovelForm() {
                     <SelectItem value="estoque">estoque — Estoque para comercialização</SelectItem>
                     <SelectItem value="uso_proprio">
                       uso_proprio — Uso institucional / próprio
-                    </SelectItem>
-                    <SelectItem value="em_obra">
-                      em_obra — Benfeitorias / desenvolvimento
                     </SelectItem>
                   </SelectContent>
                 </Select>
