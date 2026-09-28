@@ -13,6 +13,8 @@ const STORAGE_SESSION_KEY = 'mfo_imob_supabase_session_v1'
 
 const DEFAULT_SUPABASE_URL = 'https://supabase.senamfo.com.br'
 const DEFAULT_SUPABASE_SCHEMA = 'imob'
+const DEFAULT_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkwMDQ2NjYyLCJleHAiOjIxMDU0MDY2NjJ9.-ySeke2BnnLKKfmbmYCesT9bbhKK8esjtyUchSJSQOY'
 
 export function getSupabaseConfig(): SupabaseConfig {
   const envUrl = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
@@ -29,7 +31,7 @@ export function getSupabaseConfig(): SupabaseConfig {
       ? (window as unknown as { __SUPABASE_ANON_KEY__?: string }).__SUPABASE_ANON_KEY__?.trim()
       : undefined
 
-  const anonKey = envAnonKey || windowAnonKey || ''
+  const anonKey = envAnonKey || windowAnonKey || DEFAULT_SUPABASE_ANON_KEY
 
   const envSchema = (import.meta.env.VITE_SUPABASE_SCHEMA as string | undefined)?.trim()
   const windowSchema =
