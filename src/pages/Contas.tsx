@@ -342,7 +342,10 @@ export default function Contas() {
           <CardContent className="p-5 flex flex-col justify-between h-full space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                Total de Entradas (Agosto/2026)
+                Total de Entradas{' '}
+                {extratoSelecionado?.reference_month
+                  ? `(${extratoSelecionado.reference_month})`
+                  : ''}
               </span>
               <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <ArrowDownLeft className="h-4 w-4" />
@@ -353,7 +356,7 @@ export default function Contas() {
                 {formatarMoeda(totalCreditos)}
               </div>
               <span className="text-[11px] text-gray-400 mt-1 block">
-                1 crédito de aluguel conciliado
+                {transacoes.filter((t) => t.type === 'credit').length} crédito(s) de aluguel
               </span>
             </div>
             <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500 flex items-center justify-between">
@@ -362,7 +365,6 @@ export default function Contas() {
             </div>
           </CardContent>
         </Card>
-
         {/* Card Competência & Cobrança de Locação */}
         <Card className="border border-gray-200 bg-white rounded-2xl shadow-xs">
           <CardContent className="p-5 flex flex-col justify-between h-full space-y-2">
@@ -376,16 +378,18 @@ export default function Contas() {
             </div>
             <div>
               <div className="text-2xl font-black text-[#00205b]">
-                {extratoSelecionado?.reference_month || '2026-08'}
+                {extratoSelecionado?.reference_month || '—'}
               </div>
               <span className="text-[11px] text-gray-400 mt-1 block">
-                {extratoSelecionado?.statement_period || 'Extrato de Agosto/2026'}
+                {extratoSelecionado?.statement_period || '—'}
               </span>
             </div>
             <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500 flex items-center justify-between">
               <span>Cobranças liquidadas:</span>
               <span className="font-bold text-[#00205b]">
-                {cobrancas.length} ({formatarMoeda(10000)})
+                {cobrancas.length > 0
+                  ? `${cobrancas.length} (${formatarMoeda(cobrancas.reduce((acc, c) => acc + (c.paid_amount ?? c.amount ?? 0), 0))})`
+                  : '—'}
               </span>
             </div>
           </CardContent>

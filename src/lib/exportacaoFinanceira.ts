@@ -82,13 +82,34 @@ export function exportarOFX({ transactions, account, statement }: ExportDataPara
 
   const dtNow = cleanIso(new Date().toISOString()).slice(0, 14) + brtSuffix
 
-  let dtStart = '20260801000000' + brtSuffix
-  let dtEnd = '20260831235959' + brtSuffix
+  let dtStart = ''
+  let dtEnd = ''
 
   if (transactions.length > 0) {
     const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date))
     dtStart = cleanIso(sorted[0].date).slice(0, 8) + '000000' + brtSuffix
     dtEnd = cleanIso(sorted[sorted.length - 1].date).slice(0, 8) + '235959' + brtSuffix
+  } else if (statement?.start_date && statement?.end_date) {
+    dtStart = cleanIso(statement.start_date).slice(0, 8) + '000000' + brtSuffix
+    dtEnd = cleanIso(statement.end_date).slice(0, 8) + '235959' + brtSuffix
+  } else if (statement?.reference_month || statement?.competence) {
+    const ref = (statement.reference_month || statement.competence || '').replace(/\D/g, '')
+    if (ref.length >= 6) {
+      const y = parseInt(ref.slice(0, 4), 10)
+      const m = parseInt(ref.slice(4, 6), 10)
+      const lastDay = new Date(y, m, 0).getDate()
+      dtStart = `${y}${String(m).padStart(2, '0')}01000000${brtSuffix}`
+      dtEnd = `${y}${String(m).padStart(2, '0')}${String(lastDay).padStart(2, '0')}235959${brtSuffix}`
+    }
+  }
+
+  if (!dtStart || !dtEnd) {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth() + 1
+    const lastDay = new Date(y, m, 0).getDate()
+    dtStart = `${y}${String(m).padStart(2, '0')}01000000${brtSuffix}`
+    dtEnd = `${y}${String(m).padStart(2, '0')}${String(lastDay).padStart(2, '0')}235959${brtSuffix}`
   }
 
   const stmtTrnList = transactions
@@ -276,7 +297,7 @@ export function exportarTXT({ transactions, account, statement, familyName }: Ex
   linhas.push(
     `Conta:    ${account ? `${account.bank_name} - Ag. ${account.agency} / C/C ${account.account_number}` : 'Banco BTG Pactual S.A.'}`,
   )
-  linhas.push(`Extrato:  ${statement?.statement_period || 'Agosto/2026'}`)
+  linhas.push(`Extrato:  ${statement?.statement_period || 'Extrato Bancário'}`)
   linhas.push(
     `Emissão:  ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`,
   )
@@ -322,7 +343,7 @@ export function exportarPDFExecutivo({
   const banco = account
     ? `${account.bank_name} • Agência: ${account.agency} • Conta: ${account.account_number}`
     : 'Banco BTG Pactual S.A. • Agência: 0001 • Conta: 51002-9'
-  const periodo = statement?.statement_period || 'Extrato de Agosto/2026'
+  const periodo = statement?.statement_period || 'Extrato Bancário'
 
   const totalCreditos = transactions
     .filter((t) => t.type === 'credit')

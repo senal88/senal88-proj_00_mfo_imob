@@ -362,9 +362,12 @@ export default function ImovelDetalhes() {
                 <div className="text-right">
                   <span className="text-[11px] text-gray-500 block">Aluguel Mensal Vigente:</span>
                   <span className="text-xl font-bold text-[#00205b]">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                      contratoVigente.monthly_rent || 10000,
-                    )}
+                    {contratoVigente.monthly_rent
+                      ? new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(contratoVigente.monthly_rent)
+                      : '—'}
                   </span>
                 </div>
               </div>
@@ -375,13 +378,9 @@ export default function ImovelDetalhes() {
                   <span className="text-gray-400 block font-medium">Locatária (counterparty):</span>
                   <span
                     className="font-semibold text-gray-900 mt-0.5 block truncate"
-                    title={
-                      contratoVigente.tenant_name ||
-                      'Daniella Almança Gonçalves da Costa e Oliveira'
-                    }
+                    title={contratoVigente.tenant_name || 'Locatário não informado'}
                   >
-                    {contratoVigente.tenant_name ||
-                      'Daniella Almança Gonçalves da Costa e Oliveira'}
+                    {contratoVigente.tenant_name || 'Locatário não informado'}
                   </span>
                   {contratoVigente.tenant_doc && (
                     <span className="text-[10px] text-gray-500 font-mono block mt-0.5">
@@ -537,11 +536,12 @@ export default function ImovelDetalhes() {
                             Índice de Preços ao Consumidor Amplo • Aniversário do Contrato (Julho)
                           </p>
                           <div className="text-2xl font-black text-[#00205b]">
-                            {(
-                              indices.find((i) => i.name === 'IPCA' || i.code === '433')
-                                ?.accumulated_12m ?? 4.23
-                            ).toFixed(2)}
-                            %
+                            {(() => {
+                              const acc = indices.find(
+                                (i) => i.name === 'IPCA' || i.code === '433',
+                              )?.accumulated_12m
+                              return acc !== undefined && acc !== null ? `${acc.toFixed(2)}%` : '—'
+                            })()}
                           </div>
                           <span className="text-[10px] text-gray-500 block">
                             Acumulado real dos últimos 12 meses ({medicoesIpca || 12} medições na
@@ -576,11 +576,12 @@ export default function ImovelDetalhes() {
                             Índice Geral de Preços do Mercado • FGV / BACEN
                           </p>
                           <div className="text-2xl font-black text-[#00205b]">
-                            {(
-                              indices.find((i) => i.name === 'IGP-M' || i.code === '189')
-                                ?.accumulated_12m ?? 3.85
-                            ).toFixed(2)}
-                            %
+                            {(() => {
+                              const acc = indices.find(
+                                (i) => i.name === 'IGP-M' || i.code === '189',
+                              )?.accumulated_12m
+                              return acc !== undefined && acc !== null ? `${acc.toFixed(2)}%` : '—'
+                            })()}
                           </div>
                           <span className="text-[10px] text-gray-500 block">
                             Acumulado real dos últimos 12 meses ({medicoesIgpm || 12} medições na
@@ -596,15 +597,18 @@ export default function ImovelDetalhes() {
 
               {/* Box de Cálculo Transparente para Leigo */}
               {(() => {
-                const aluguelAtual = contratoVigente.monthly_rent || 10000
-                const percentual =
+                const aluguelAtual = contratoVigente.monthly_rent || 0
+                const percentualObj =
                   indiceSelecionado === 'IPCA'
-                    ? (indices.find((i) => i.name === 'IPCA' || i.code === '433')
-                        ?.accumulated_12m ?? 4.23)
-                    : (indices.find((i) => i.name === 'IGP-M' || i.code === '189')
-                        ?.accumulated_12m ?? 3.85)
-                const valorReajuste = aluguelAtual * (percentual / 100)
-                const novoAluguel = aluguelAtual * (1 + percentual / 100)
+                    ? indices.find((i) => i.name === 'IPCA' || i.code === '433')?.accumulated_12m
+                    : indices.find((i) => i.name === 'IGP-M' || i.code === '189')?.accumulated_12m
+
+                const temDadosCalculo =
+                  aluguelAtual > 0 && percentualObj !== undefined && percentualObj !== null
+
+                const percentual = percentualObj ?? 0
+                const valorReajuste = temDadosCalculo ? aluguelAtual * (percentual / 100) : 0
+                const novoAluguel = temDadosCalculo ? aluguelAtual * (1 + percentual / 100) : 0
 
                 return (
                   <div className="p-5 rounded-xl border border-blue-200 bg-blue-50/40 space-y-4">
@@ -619,7 +623,10 @@ export default function ImovelDetalhes() {
                         </p>
                       </div>
                       <span className="text-xs bg-white text-[#00205b] font-mono font-bold px-2.5 py-1 rounded-md border border-blue-200">
-                        {indiceSelecionado}: +{percentual.toFixed(2)}%
+                        {indiceSelecionado}:{' '}
+                        {percentualObj !== undefined && percentualObj !== null
+                          ? `${percentual >= 0 ? '+' : ''}${percentual.toFixed(2)}%`
+                          : '—'}
                       </span>
                     </div>
 
@@ -627,35 +634,43 @@ export default function ImovelDetalhes() {
                       <div>
                         <span className="text-gray-500 block">Aluguel Atual:</span>
                         <span className="text-base font-bold text-gray-900 mt-0.5 block">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(aluguelAtual)}
+                          {aluguelAtual > 0
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(aluguelAtual)
+                            : '—'}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-500 block">Índice Aplicado:</span>
                         <span className="text-base font-bold text-[#0052cc] mt-0.5 block">
-                          {indiceSelecionado} (+{percentual.toFixed(2)}%)
+                          {indiceSelecionado}{' '}
+                          {percentualObj !== undefined && percentualObj !== null
+                            ? `(${percentual >= 0 ? '+' : ''}${percentual.toFixed(2)}%)`
+                            : '(—)'}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-500 block">Acréscimo Mensal:</span>
                         <span className="text-base font-bold text-emerald-700 mt-0.5 block">
-                          +
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(valorReajuste)}
+                          {temDadosCalculo
+                            ? `+${new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(valorReajuste)}`
+                            : '—'}
                         </span>
                       </div>
                       <div>
                         <span className="text-gray-500 block font-semibold">Novo Aluguel:</span>
                         <span className="text-lg font-black text-[#00205b] mt-0.5 block">
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL',
-                          }).format(novoAluguel)}
+                          {temDadosCalculo
+                            ? new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL',
+                              }).format(novoAluguel)
+                            : '—'}
                         </span>
                       </div>
                     </div>
@@ -667,8 +682,9 @@ export default function ImovelDetalhes() {
                       </span>
 
                       <Button
-                        disabled={gerandoTermo}
+                        disabled={gerandoTermo || !temDadosCalculo}
                         onClick={async () => {
+                          if (!temDadosCalculo) return
                           setGerandoTermo(true)
                           try {
                             await registrarReajusteContrato({
@@ -699,7 +715,7 @@ export default function ImovelDetalhes() {
                             setGerandoTermo(false)
                           }
                         }}
-                        className="bg-[#00205b] hover:bg-[#001742] text-white flex items-center gap-2 shadow-xs"
+                        className="bg-[#00205b] hover:bg-[#001742] text-white flex items-center gap-2 shadow-xs disabled:opacity-50"
                       >
                         {termoGeradoSucesso ? (
                           <>

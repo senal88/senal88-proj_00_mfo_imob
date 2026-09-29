@@ -902,38 +902,6 @@ export async function obterContratoVigentePorImovel(
     }
 
     if (!rows || rows.length === 0) {
-      if (propertyId === 'prop-51002' || propertyId === '51002') {
-        return {
-          id: 'lease-51002-902',
-          property_id: propertyId,
-          family_id: familiaId || '',
-          counterparty_id: 'cp-daniella-almanca',
-          counterparty: {
-            id: 'cp-daniella-almanca',
-            name: 'Daniella Almança Gonçalves da Costa e Oliveira',
-            cpf_cnpj: '078.432.197-02',
-            email: 'daniella.almanca@email.com',
-            phone: '(27) 99821-4400',
-            role: 'tenant',
-          },
-          tenant_name: 'Daniella Almança Gonçalves da Costa e Oliveira',
-          tenant_doc: '078.432.197-02',
-          tenant_email: 'daniella.almanca@email.com',
-          tenant_phone: '(27) 99821-4400',
-          monthly_rent: 10000,
-          value: 10000,
-          rent_value: 10000,
-          start_date: '2026-07-03',
-          end_date: '2029-01-03',
-          due_day: 5,
-          adjustment_index: 'IPCA',
-          adjustment_month: 7, // Julho
-          status: 'active',
-          active: true,
-          notes: 'Locação residencial de alto padrão - Ed. Emílio Bumachar Apto 902',
-          created_at: '2026-07-03T10:00:00Z',
-        }
-      }
       return null
     }
 
@@ -962,38 +930,6 @@ export async function obterContratoVigentePorImovel(
     return mapDbToLease(leaseData)
   } catch (err) {
     console.warn(`Erro ao consultar lease para imóvel ${propertyId}:`, err)
-    if (propertyId === 'prop-51002' || propertyId === '51002') {
-      return {
-        id: 'lease-51002-902',
-        property_id: propertyId,
-        family_id: familiaId || '',
-        counterparty_id: 'cp-daniella-almanca',
-        counterparty: {
-          id: 'cp-daniella-almanca',
-          name: 'Daniella Almança Gonçalves da Costa e Oliveira',
-          cpf_cnpj: '078.432.197-02',
-          email: 'daniella.almanca@email.com',
-          phone: '(27) 99821-4400',
-          role: 'tenant',
-        },
-        tenant_name: 'Daniella Almança Gonçalves da Costa e Oliveira',
-        tenant_doc: '078.432.197-02',
-        tenant_email: 'daniella.almanca@email.com',
-        tenant_phone: '(27) 99821-4400',
-        monthly_rent: 10000,
-        value: 10000,
-        rent_value: 10000,
-        start_date: '2026-07-03',
-        end_date: '2029-01-03',
-        due_day: 5,
-        adjustment_index: 'IPCA',
-        adjustment_month: 7, // Julho
-        status: 'active',
-        active: true,
-        notes: 'Locação residencial de alto padrão - Ed. Emílio Bumachar Apto 902',
-        created_at: '2026-07-03T10:00:00Z',
-      }
-    }
     return null
   }
 }
@@ -1055,43 +991,12 @@ export async function listarCobrancasLocacao(params?: {
 
     const { data: rows, error } = await builder
     if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
-      if (params?.propertyId === 'prop-51002' || !params?.propertyId) {
-        return [
-          {
-            id: 'chg-202608-51002',
-            property_id: params?.propertyId || 'prop-51002',
-            lease_id: params?.leaseId || 'lease-51002-902',
-            competence: '2026-08',
-            due_date: '2026-08-05',
-            amount: 10000,
-            paid_amount: 10000,
-            payment_date: '2026-08-05',
-            status: 'paid',
-            notes: 'Aluguel Apto 902 quitado integralmente via PIX',
-            created_at: '2026-08-01T08:00:00Z',
-          },
-        ]
-      }
       return []
     }
     return (rows as Array<Record<string, unknown>>).map(mapDbToLeaseCharge)
   } catch (err) {
     console.warn('Erro ao listar cobranças de locação:', err)
-    return [
-      {
-        id: 'chg-202608-51002',
-        property_id: params?.propertyId || 'prop-51002',
-        lease_id: params?.leaseId || 'lease-51002-902',
-        competence: '2026-08',
-        due_date: '2026-08-05',
-        amount: 10000,
-        paid_amount: 10000,
-        payment_date: '2026-08-05',
-        status: 'paid',
-        notes: 'Aluguel Apto 902 quitado integralmente via PIX',
-        created_at: '2026-08-01T08:00:00Z',
-      },
-    ]
+    return []
   }
 }
 
@@ -1107,87 +1012,12 @@ export async function listarContasBancarias(familiaId?: string): Promise<BankAcc
 
     const { data: rows, error } = await builder
     if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
-      // Fallback com as 3 contas reais solicitadas caso a tabela ainda não devolva linhas
-      return [
-        {
-          id: 'acc-btg-4177348',
-          family_id: familiaId || '',
-          bank_name: 'Banco BTG Pactual S.A.',
-          bank_code: '208',
-          agency: '0001',
-          account_number: '417734-8',
-          account_type: 'Conta Corrente',
-          description: 'BTG Pactual • Conta 417734-8',
-          balance: 10000,
-          is_active: true,
-        },
-        {
-          id: 'acc-caixa-5784121967',
-          family_id: familiaId || '',
-          bank_name: 'Caixa Econômica Federal',
-          bank_code: '104',
-          agency: '0167',
-          account_number: '000578412196-7',
-          account_type: 'Conta Corrente',
-          description: 'Caixa • Conta 000578412196-7',
-          balance: 0,
-          is_active: true,
-        },
-        {
-          id: 'acc-caixa-repasse',
-          family_id: familiaId || '',
-          bank_name: 'Caixa Econômica Federal',
-          bank_code: '104',
-          agency: '0167',
-          account_number: 'Repasse',
-          account_type: 'Conta Repasse',
-          description: 'Caixa repasse',
-          balance: 0,
-          is_active: true,
-        },
-      ]
+      return []
     }
     return (rows as Array<Record<string, unknown>>).map(mapDbToBankAccount)
   } catch (err) {
     console.warn('Erro ao consultar contas bancárias:', err)
-    return [
-      {
-        id: 'acc-btg-4177348',
-        family_id: familiaId || '',
-        bank_name: 'Banco BTG Pactual S.A.',
-        bank_code: '208',
-        agency: '0001',
-        account_number: '417734-8',
-        account_type: 'Conta Corrente',
-        description: 'BTG Pactual • Conta 417734-8',
-        balance: 10000,
-        is_active: true,
-      },
-      {
-        id: 'acc-caixa-5784121967',
-        family_id: familiaId || '',
-        bank_name: 'Caixa Econômica Federal',
-        bank_code: '104',
-        agency: '0167',
-        account_number: '000578412196-7',
-        account_type: 'Conta Corrente',
-        description: 'Caixa • Conta 000578412196-7',
-        balance: 0,
-        is_active: true,
-      },
-      {
-        id: 'acc-caixa-repasse',
-        family_id: familiaId || '',
-        bank_name: 'Caixa Econômica Federal',
-        bank_code: '104',
-        agency: '0167',
-        account_number: 'Repasse',
-        account_type: 'Conta Repasse',
-        description: 'Caixa repasse',
-        balance: 0,
-        is_active: true,
-      },
-    ]
+    return []
   }
 }
 
@@ -1212,38 +1042,12 @@ export async function listarExtratosBancarios(params?: {
 
     const { data: rows, error } = await builder
     if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
-      return [
-        {
-          id: 'stmt-2026-08',
-          bank_account_id: params?.bankAccountId || 'acc-btg-51002',
-          statement_period: 'Extrato de Agosto/2026',
-          reference_month: '2026-08',
-          competence: '2026-08',
-          start_date: '2026-08-01',
-          end_date: '2026-08-31',
-          opening_balance: 0,
-          closing_balance: 10000,
-          status: 'conciliado',
-        },
-      ]
+      return []
     }
     return (rows as Array<Record<string, unknown>>).map(mapDbToBankStatement)
   } catch (err) {
     console.warn('Erro ao consultar extratos bancários:', err)
-    return [
-      {
-        id: 'stmt-2026-08',
-        bank_account_id: params?.bankAccountId || 'acc-btg-51002',
-        statement_period: 'Extrato de Agosto/2026',
-        reference_month: '2026-08',
-        competence: '2026-08',
-        start_date: '2026-08-01',
-        end_date: '2026-08-31',
-        opening_balance: 0,
-        closing_balance: 10000,
-        status: 'conciliado',
-      },
-    ]
+    return []
   }
 }
 
@@ -1277,46 +1081,12 @@ export async function listarTransacoes(params?: {
 
     const { data: rows, error } = await builder
     if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
-      return [
-        {
-          id: 'tx-20260805-51002-902',
-          statement_id: params?.statementId || 'stmt-2026-08',
-          bank_account_id: params?.bankAccountId || 'acc-btg-51002',
-          property_id: params?.propertyId || 'prop-51002',
-          date: '2026-08-05',
-          amount: 10000,
-          type: 'credit',
-          fitid: 'FITID-20260805-51002-902',
-          description:
-            'PIX RECEBIDO - DANIELLA ALMANCA GONCALVES DA COSTA E OLIVEIRA - ALUGUEL APTO 902',
-          category: 'Receita de Locação',
-          reconciled: true,
-          status: 'conciliado',
-          lease_charge_id: 'chg-202608-51002',
-        },
-      ]
+      return []
     }
     return (rows as Array<Record<string, unknown>>).map(mapDbToTransaction)
   } catch (err) {
     console.warn('Erro ao consultar transações:', err)
-    return [
-      {
-        id: 'tx-20260805-51002-902',
-        statement_id: params?.statementId || 'stmt-2026-08',
-        bank_account_id: params?.bankAccountId || 'acc-btg-51002',
-        property_id: params?.propertyId || 'prop-51002',
-        date: '2026-08-05',
-        amount: 10000,
-        type: 'credit',
-        fitid: 'FITID-20260805-51002-902',
-        description:
-          'PIX RECEBIDO - DANIELLA ALMANCA GONCALVES DA COSTA E OLIVEIRA - ALUGUEL APTO 902',
-        category: 'Receita de Locação',
-        reconciled: true,
-        status: 'conciliado',
-        lease_charge_id: 'chg-202608-51002',
-      },
-    ]
+    return []
   }
 }
 
@@ -1329,7 +1099,7 @@ export async function listarTransacoes(params?: {
 export function calcularAcumulado12Meses(
   medicoes: EconomicIndex[],
   tipo: 'IPCA' | 'IGP-M' | string,
-): number {
+): number | null {
   const normTipo = tipo.toUpperCase()
   const filtrados = medicoes
     .filter((m) => {
@@ -1348,7 +1118,7 @@ export function calcularAcumulado12Meses(
   // Pega os 12 meses mais recentes da série completa (ex: 24 medições)
   const ultimos12 = filtrados.slice(0, 12)
   if (ultimos12.length === 0) {
-    return normTipo.includes('IPCA') ? 4.23 : 3.85
+    return null
   }
 
   // Composição geométrica dos fatores mensais:
@@ -1370,76 +1140,7 @@ export async function listarIndicesEconomicos(): Promise<EconomicIndex[]> {
       .order('date', { ascending: false })
 
     if (error || !rows || !Array.isArray(rows) || rows.length === 0) {
-      // Fallback robusto simulando as 24 medições históricas reais do BACEN SGS
-      const fallback24: EconomicIndex[] = []
-      const meses = [
-        '2026-08',
-        '2026-07',
-        '2026-06',
-        '2026-05',
-        '2026-04',
-        '2026-03',
-        '2026-02',
-        '2026-01',
-        '2025-12',
-        '2025-11',
-        '2025-10',
-        '2025-09',
-        '2025-08',
-        '2025-07',
-        '2025-06',
-        '2025-05',
-        '2025-04',
-        '2025-03',
-        '2025-02',
-        '2025-01',
-        '2024-12',
-        '2024-11',
-        '2024-10',
-        '2024-09',
-      ]
-
-      const valoresIpca = [
-        0.38, 0.36, 0.21, 0.46, 0.38, 0.16, 0.83, 0.42, 0.52, 0.28, 0.24, 0.26, 0.3, 0.12, 0.25,
-        0.44, 0.38, 0.16, 0.8, 0.4, 0.5, 0.25, 0.2, 0.22,
-      ]
-
-      const valoresIgpm = [
-        0.29, 0.61, 0.81, 0.89, 0.31, -0.47, -0.52, 0.07, 0.74, 0.59, 0.48, 0.32, 0.2, 0.5, 0.7,
-        0.8, 0.25, -0.4, -0.5, 0.05, 0.65, 0.5, 0.4, 0.28,
-      ]
-
-      meses.forEach((m, idx) => {
-        fallback24.push({
-          id: `idx-ipca-${m}`,
-          code: '433',
-          series_code: 433,
-          name: 'IPCA',
-          date: `${m}-01`,
-          value: valoresIpca[idx] ?? 0.35,
-          accumulated_12m: 4.23,
-          source: 'BACEN SGS - Série 433',
-        })
-        fallback24.push({
-          id: `idx-igpm-${m}`,
-          code: '189',
-          series_code: 189,
-          name: 'IGP-M',
-          date: `${m}-01`,
-          value: valoresIgpm[idx] ?? 0.3,
-          accumulated_12m: 3.85,
-          source: 'BACEN SGS - Série 189',
-        })
-      })
-
-      // Recalcula acumulado dinâmico dos 12 meses
-      const ipca12m = calcularAcumulado12Meses(fallback24, 'IPCA')
-      const igpm12m = calcularAcumulado12Meses(fallback24, 'IGP-M')
-
-      return fallback24.map((item) => ({
-        ...item,
-        accumulated_12m: item.name === 'IPCA' ? ipca12m : igpm12m,
-      }))
+      return []
     }
 
     const mapped = (rows as Array<Record<string, unknown>>).map(mapDbToEconomicIndex)
@@ -1452,33 +1153,12 @@ export async function listarIndicesEconomicos(): Promise<EconomicIndex[]> {
       const acumuladoReal = isIpca ? ipca12m : igpm12m
       return {
         ...m,
-        accumulated_12m: acumuladoReal,
+        accumulated_12m: acumuladoReal !== null ? acumuladoReal : undefined,
       }
     })
   } catch (err) {
     console.warn('Erro ao consultar índices econômicos:', err)
-    return [
-      {
-        id: 'idx-ipca-433',
-        code: '433',
-        series_code: 433,
-        name: 'IPCA',
-        date: '2026-08-01',
-        value: 0.38,
-        accumulated_12m: 4.23,
-        source: 'BACEN SGS - Série 433',
-      },
-      {
-        id: 'idx-igpm-189',
-        code: '189',
-        series_code: 189,
-        name: 'IGP-M',
-        date: '2026-08-01',
-        value: 0.29,
-        accumulated_12m: 3.85,
-        source: 'BACEN SGS - Série 189',
-      },
-    ]
+    return []
   }
 }
 
@@ -1613,8 +1293,15 @@ function mapDbToLease(r: Record<string, unknown>): Lease {
   const tenantEmailFromCp = cp?.email ? String(cp.email) : undefined
   const tenantPhoneFromCp = cp?.phone ? String(cp.phone) : undefined
 
+  const tenantName =
+    tenantNameFromCp ||
+    (r.tenant_name ? String(r.tenant_name) : undefined) ||
+    (r.tenant ? String(r.tenant) : undefined) ||
+    (r.locataria ? String(r.locataria) : undefined) ||
+    (r.locatario ? String(r.locatario) : undefined)
+
   // Resolução do aniversário de reajuste (ex: mês 7 / julho)
-  const adjMonth = r.adjustment_month || r.anniversary_month || r.reajuste_mes || 7
+  const adjMonth = r.adjustment_month || r.anniversary_month || r.reajuste_mes
 
   return {
     id: String(r.id),
@@ -1637,27 +1324,21 @@ function mapDbToLease(r: Record<string, unknown>): Lease {
           role: cp.role ? String(cp.role) : undefined,
         }
       : undefined,
-    tenant_name: String(
-      tenantNameFromCp ||
-        r.tenant_name ||
-        r.tenant ||
-        r.locataria ||
-        r.locatario ||
-        'Daniella Almança Gonçalves da Costa e Oliveira',
-    ),
+    tenant_name: tenantName,
     tenant_doc:
       tenantDocFromCp ||
       (r.tenant_doc || r.tenant_cpf_cnpj ? String(r.tenant_doc || r.tenant_cpf_cnpj) : undefined),
     tenant_email: tenantEmailFromCp || (r.tenant_email ? String(r.tenant_email) : undefined),
     tenant_phone: tenantPhoneFromCp || (r.tenant_phone ? String(r.tenant_phone) : undefined),
-    monthly_rent: rent !== undefined ? rent : 10000,
-    value: rent !== undefined ? rent : 10000,
-    rent_value: rent !== undefined ? rent : 10000,
-    start_date: r.start_date ? String(r.start_date) : '2026-07-03',
-    end_date: r.end_date ? String(r.end_date) : '2029-01-03',
-    due_day: r.due_day ? Number(r.due_day) : 5,
-    adjustment_index: r.adjustment_index ? String(r.adjustment_index) : 'IPCA',
-    adjustment_month: adjMonth as number | string,
+    monthly_rent: rent !== undefined ? rent : 0,
+    value: rent !== undefined ? rent : 0,
+    rent_value: rent !== undefined ? rent : 0,
+    start_date: r.start_date ? String(r.start_date) : undefined,
+    end_date: r.end_date ? String(r.end_date) : undefined,
+    due_day: r.due_day !== undefined && r.due_day !== null ? Number(r.due_day) : undefined,
+    adjustment_index: r.adjustment_index ? String(r.adjustment_index) : undefined,
+    adjustment_month:
+      adjMonth !== undefined && adjMonth !== null ? (adjMonth as number | string) : undefined,
     status: r.status ? String(r.status) : 'active',
     active: r.active !== undefined ? Boolean(r.active) : true,
     notes: r.notes ? String(r.notes) : undefined,
@@ -1694,14 +1375,23 @@ function mapDbToBankStatement(r: Record<string, unknown>): BankStatement {
     id: String(r.id),
     bank_account_id: r.bank_account_id ? String(r.bank_account_id) : undefined,
     family_id: r.family_id ? String(r.family_id) : undefined,
-    statement_period: String(r.statement_period || r.period || r.title || 'Extrato de Agosto/2026'),
-    reference_month: r.reference_month ? String(r.reference_month) : '2026-08',
-    competence: r.competence ? String(r.competence) : '2026-08',
+    statement_period:
+      r.statement_period || r.period || r.title
+        ? String(r.statement_period || r.period || r.title)
+        : undefined,
+    reference_month: r.reference_month ? String(r.reference_month) : undefined,
+    competence: r.competence ? String(r.competence) : undefined,
     start_date: r.start_date ? String(r.start_date) : undefined,
     end_date: r.end_date ? String(r.end_date) : undefined,
-    opening_balance: r.opening_balance ? Number(r.opening_balance) : undefined,
-    closing_balance: r.closing_balance ? Number(r.closing_balance) : undefined,
-    status: r.status ? String(r.status) : 'conciliado',
+    opening_balance:
+      r.opening_balance !== undefined && r.opening_balance !== null
+        ? Number(r.opening_balance)
+        : undefined,
+    closing_balance:
+      r.closing_balance !== undefined && r.closing_balance !== null
+        ? Number(r.closing_balance)
+        : undefined,
+    status: r.status ? String(r.status) : undefined,
     file_url: r.file_url ? String(r.file_url) : undefined,
     created_at: r.created_at ? String(r.created_at) : undefined,
   }
@@ -1721,19 +1411,15 @@ function mapDbToTransaction(r: Record<string, unknown>): Transaction {
     bank_account_id: r.bank_account_id ? String(r.bank_account_id) : undefined,
     property_id: r.property_id ? String(r.property_id) : undefined,
     family_id: r.family_id ? String(r.family_id) : undefined,
-    date: String(r.date || r.transaction_date || '2026-08-05'),
-    amount: Math.abs(amount) || 10000,
+    date: r.date || r.transaction_date ? String(r.date || r.transaction_date) : '',
+    amount: Math.abs(amount) || 0,
     type: isCredit ? 'credit' : 'debit',
-    fitid: String(r.fitid || r.transaction_id || 'FITID-20260805-51002-902'),
-    description: String(
-      r.description ||
-        r.memo ||
-        'PIX RECEBIDO - DANIELLA ALMANCA GONCALVES DA COSTA E OLIVEIRA - ALUGUEL APTO 902',
-    ),
+    fitid: r.fitid || r.transaction_id ? String(r.fitid || r.transaction_id) : undefined,
+    description: r.description || r.memo ? String(r.description || r.memo) : '',
     memo: r.memo ? String(r.memo) : undefined,
-    reconciled: r.reconciled !== undefined ? Boolean(r.reconciled) : true,
-    status: r.status ? String(r.status) : 'conciliado',
-    category: r.category ? String(r.category) : 'Aluguel',
+    reconciled: r.reconciled !== undefined ? Boolean(r.reconciled) : false,
+    status: r.status ? String(r.status) : undefined,
+    category: r.category ? String(r.category) : undefined,
     lease_charge_id: r.lease_charge_id ? String(r.lease_charge_id) : undefined,
     created_at: r.created_at ? String(r.created_at) : undefined,
   }
@@ -1765,15 +1451,13 @@ function mapDbToEconomicIndex(r: Record<string, unknown>): EconomicIndex {
     code: code || (name === 'IPCA' ? '433' : '189'),
     series_code: (r.series_code as string | number) || (name === 'IPCA' ? 433 : 189),
     name,
-    date: String(r.date || r.reference_date || '2026-08-01'),
+    date: String(r.date || r.reference_date || ''),
     reference_date: r.reference_date ? String(r.reference_date) : undefined,
     value: Number(r.value || 0),
     accumulated_12m:
       r.accumulated_12m !== undefined && r.accumulated_12m !== null
         ? Number(r.accumulated_12m)
-        : name === 'IPCA'
-          ? 4.23
-          : 3.85,
+        : undefined,
     source: r.source ? String(r.source) : 'BACEN SGS',
     created_at: r.created_at ? String(r.created_at) : undefined,
   }
