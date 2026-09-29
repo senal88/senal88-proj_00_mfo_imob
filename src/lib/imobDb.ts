@@ -115,12 +115,9 @@ export async function resolverUsuarioLogado(
     }
   }
 
-  // Se o nome não veio nos metadados, deriva do e-mail
-  if (!nome && email) {
-    nome = email
-      .split('@')[0]
-      .replace(/[._]/g, ' ')
-      .replace(/\b\w/g, (l) => l.toUpperCase())
+  // Se não houver nome nos metadados do usuário, usar 'Operador' como fallback
+  if (!nome) {
+    nome = 'Operador'
   }
 
   // Padrão do projeto é a Família BNI quando não identificado
@@ -130,7 +127,7 @@ export async function resolverUsuarioLogado(
 
   const usuario: Usuario = {
     id: userId,
-    nome: nome || 'Operador BNI',
+    nome: nome || 'Operador',
     email,
     cargo,
     familia_id: familiaId,

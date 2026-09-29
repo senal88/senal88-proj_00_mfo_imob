@@ -65,111 +65,18 @@ export default function Contas() {
         listarCobrancasLocacao({ familiaId: usuario?.familia_id }),
       ])
 
-      const accList: BankAccount[] =
-        accs.length > 0
-          ? accs
-          : [
-              {
-                id: 'acc-btg-4177348',
-                bank_name: 'Banco BTG Pactual S.A.',
-                bank_code: '208',
-                agency: '0001',
-                account_number: '417734-8',
-                account_type: 'Conta Corrente',
-                description: 'BTG Pactual • Conta 417734-8',
-                balance: 10000,
-                is_active: true,
-              },
-              {
-                id: 'acc-caixa-5784121967',
-                bank_name: 'Caixa Econômica Federal',
-                bank_code: '104',
-                agency: '0167',
-                account_number: '000578412196-7',
-                account_type: 'Conta Corrente',
-                description: 'Caixa • Conta 000578412196-7',
-                balance: 0,
-                is_active: true,
-              },
-              {
-                id: 'acc-caixa-repasse',
-                bank_name: 'Caixa Econômica Federal',
-                bank_code: '104',
-                agency: '0167',
-                account_number: 'Repasse',
-                account_type: 'Conta Repasse',
-                description: 'Caixa repasse',
-                balance: 0,
-                is_active: true,
-              },
-            ]
-
-      const stmtList: BankStatement[] =
-        stmts.length > 0
-          ? stmts
-          : [
-              {
-                id: 'stmt-2026-08',
-                bank_account_id: accList[0].id,
-                statement_period: 'Extrato de Agosto/2026',
-                reference_month: '2026-08',
-                competence: '2026-08',
-                start_date: '2026-08-01',
-                end_date: '2026-08-31',
-                opening_balance: 0,
-                closing_balance: 10000,
-                status: 'conciliado',
-              },
-            ]
-
-      const txList: Transaction[] =
-        txs.length > 0
-          ? txs
-          : [
-              {
-                id: 'tx-20260805-51002-902',
-                statement_id: stmtList[0].id,
-                bank_account_id: accList[0].id,
-                date: '2026-08-05',
-                amount: 10000,
-                type: 'credit',
-                fitid: 'FITID-20260805-51002-902',
-                description:
-                  'PIX RECEBIDO - DANIELLA ALMANCA GONCALVES DA COSTA E OLIVEIRA - ALUGUEL APTO 902',
-                category: 'Receita de Locação',
-                reconciled: true,
-                status: 'conciliado',
-              },
-            ]
-
-      const chargeList: LeaseCharge[] =
-        charges.length > 0
-          ? charges
-          : [
-              {
-                id: 'chg-202608',
-                competence: '2026-08',
-                due_date: '2026-08-05',
-                amount: 10000,
-                paid_amount: 10000,
-                payment_date: '2026-08-05',
-                status: 'paid',
-                notes: 'Aluguel Apto 902 quitado via PIX',
-              },
-            ]
-
-      setContas(accList)
+      setContas(accs)
       setContaSelecionada((prev) => {
         if (prev) {
-          const matched = accList.find((a) => a.id === prev.id)
+          const matched = accs.find((a) => a.id === prev.id)
           if (matched) return matched
         }
-        return accList[0] || null
+        return accs[0] || null
       })
-      setExtratos(stmtList)
-      setExtratoSelecionado(stmtList[0] || null)
-      setTransacoes(txList)
-      setCobrancas(chargeList)
+      setExtratos(stmts)
+      setExtratoSelecionado(stmts[0] || null)
+      setTransacoes(txs)
+      setCobrancas(charges)
     } finally {
       setLoading(false)
     }
@@ -209,10 +116,10 @@ export default function Contas() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-[#00205b]">
-            Gestão de Contas & Subledger Bancário
+            Contas e Extratos Bancários
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Conciliação bancária, extratos e subledger • {usuario?.familia_nome || 'Família BNI'}
+            Conciliação bancária e extratos • {usuario?.familia_nome || 'Família BNI'}
           </p>
         </div>
 
@@ -318,9 +225,6 @@ export default function Contas() {
           <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
             Contas Cadastradas ({contas.length})
           </span>
-          <span className="text-xs text-gray-400">
-            Origem: <code>imob.bank_account</code>
-          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -424,10 +328,10 @@ export default function Contas() {
             </div>
 
             <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-[11px] text-gray-500">Status Subledger:</span>
+              <span className="text-[11px] text-gray-500">Situação:</span>
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                 <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                Ativa no Supabase
+                Ativa
               </span>
             </div>
           </CardContent>
@@ -494,11 +398,10 @@ export default function Contas() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <CardTitle className="text-lg font-bold text-[#00205b]">
-                Lançamentos do Subledger Bancário
+                Lançamentos Bancários
               </CardTitle>
               <CardDescription className="text-xs text-gray-500">
-                Consulta em tempo real à tabela <code>imob.transaction</code> e{' '}
-                <code>imob.bank_statement</code>
+                Histórico consolidado de transações bancárias e conciliações
               </CardDescription>
             </div>
 
@@ -512,7 +415,7 @@ export default function Contas() {
           {loading ? (
             <div className="p-12 text-center">
               <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#0052cc] border-t-transparent mx-auto mb-3" />
-              <p className="text-xs text-gray-500">Carregando transações do subledger...</p>
+              <p className="text-xs text-gray-500">Carregando lançamentos...</p>
             </div>
           ) : transacoes.length === 0 ? (
             <div className="p-12 text-center space-y-3">
@@ -596,13 +499,13 @@ export default function Contas() {
         </CardContent>
       </Card>
 
-      {/* Seção Secundária: Cobranças de Locação Registradas (imob.lease_charge) */}
+      {/* Seção Secundária: Cobranças de Locação Registradas */}
       <Card className="border border-gray-200 shadow-xs bg-white rounded-2xl overflow-hidden">
         <CardHeader className="bg-slate-50 border-b border-gray-100 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base font-bold text-[#00205b]">
-                Cobranças de Locação Emitidas (imob.lease_charge)
+                Cobranças de Locação Emitidas
               </CardTitle>
               <CardDescription className="text-xs text-gray-500">
                 Títulos de cobrança gerados com vínculo ao contrato de locação

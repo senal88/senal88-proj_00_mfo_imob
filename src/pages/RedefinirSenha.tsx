@@ -57,7 +57,7 @@ export default function RedefinirSenha() {
             <Building2 className="h-8 w-8" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#111827]">Redefinição de Senha</h1>
-          <p className="text-xs sm:text-sm text-gray-500">MFO Imob • Supabase Auth</p>
+          <p className="text-xs sm:text-sm text-gray-500">MFO Imob</p>
         </div>
 
         <Card className="border border-gray-200 bg-white shadow-md rounded-2xl">
@@ -83,7 +83,7 @@ export default function RedefinirSenha() {
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-gray-900">Senha Alterada!</h3>
                   <p className="text-xs text-gray-600">
-                    Sua credencial foi atualizada com sucesso no Supabase. Você já pode fazer login.
+                    Sua senha foi atualizada com sucesso. Você já pode fazer login.
                   </p>
                 </div>
                 <div className="pt-2">

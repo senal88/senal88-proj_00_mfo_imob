@@ -39,8 +39,8 @@ export default function Login() {
         setErro('Credenciais inválidas. Verifique seu e-mail e senha.')
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro de conexão com o Supabase.'
-      setErro(msg || 'Erro de conexão com o Supabase. Tente novamente.')
+      const msg = err instanceof Error ? err.message : 'Erro de conexão.'
+      setErro(msg || 'Erro de conexão. Tente novamente.')
     }
   }
 
@@ -63,8 +63,7 @@ export default function Login() {
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-lg font-bold text-gray-900">Acesso Restrito</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Digite suas credenciais do Supabase para visualizar os imóveis da família com
-              isolamento RLS
+              Entre com seu e-mail e senha para acessar os imóveis da família
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -131,18 +130,18 @@ export default function Login() {
                 className="w-full h-11 bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white font-semibold text-sm shadow-xs mt-2"
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                {isLoading ? 'Autenticando no Supabase...' : 'Entrar no Sistema'}
+                {isLoading ? 'Entrando...' : 'Entrar no Sistema'}
               </Button>
             </form>
 
             <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50/80 p-3 text-xs space-y-1 text-gray-600">
               <div className="flex items-center gap-1.5 text-gray-800 font-semibold text-[11px]">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span>Autenticação Supabase Self-Hosted (RLS)</span>
+                <span>Acesso protegido</span>
               </div>
               <p className="text-[11px] text-gray-500">
-                Acesso por usuário autenticado. O banco de dados isola automaticamente os imóveis e
-                documentos conforme as políticas RLS da família.
+                Acesso por usuário autenticado. Os imóveis e documentos de cada família ficam
+                isolados automaticamente.
               </p>
             </div>
           </CardContent>

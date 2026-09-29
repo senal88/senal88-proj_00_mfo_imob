@@ -55,7 +55,7 @@ export default function EsqueciSenha() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-bold text-gray-900">Esqueceu sua senha?</CardTitle>
             <CardDescription className="text-xs text-gray-500">
-              Informe seu e-mail cadastrado no Supabase para enviarmos instruções de redefinição
+              Informe seu e-mail cadastrado para enviarmos as instruções de redefinição
             </CardDescription>
           </CardHeader>
           <CardContent>

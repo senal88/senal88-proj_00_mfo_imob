@@ -203,7 +203,7 @@ export function exportarExcel({ transactions, account, statement, familyName }: 
       <body>
         <table>
           <tr><td colspan="7" class="header-title">MFO TRUST • GESTÃO PATRIMONIAL</td></tr>
-          <tr><td colspan="7" class="header-sub">Demonstrativo de Contas & Subledger • ${familyName || 'Família BNI'}</td></tr>
+          <tr><td colspan="7" class="header-sub">Demonstrativo de Contas e Extratos • ${familyName || 'Família BNI'}</td></tr>
           <tr><td colspan="7" class="header-sub">Conta: ${banco} • Período: ${periodo}</td></tr>
           <tr><td colspan="7"></td></tr>
           <thead>
@@ -296,7 +296,7 @@ export function exportarTXT({ transactions, account, statement, familyName }: Ex
 
   linhas.push('================================================================================')
   linhas.push(`Total de lançamentos: ${transactions.length}`)
-  linhas.push('Subledger auditado pelo Family Office.')
+  linhas.push('Movimentação bancária conferida pelo Family Office.')
 
   const conteudo = linhas.join('\r\n')
   const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' })
@@ -448,7 +448,7 @@ export function exportarPDFExecutivo({
       <div class="header">
         <div>
           <div class="logo-title">MFO TRUST</div>
-          <div class="logo-sub">Multi-Family Office • Gestão Imobiliária & Subledger</div>
+          <div class="logo-sub">Multi-Family Office • Gestão Imobiliária e Financeira</div>
           <div style="font-size: 12px; font-weight: 600; color: #334155; margin-top: 4px;">
             ${familyName || 'Família BNI'}
           </div>
@@ -513,7 +513,7 @@ export function exportarPDFExecutivo({
 
       <div class="footer">
         <div>MFO Trust • Todos os direitos reservados. Confidencial e restrito à família titular.</div>
-        <div>Auditoria Subledger Supabase Self-Hosted • Schema "imob"</div>
+        <div>Documento gerado pelo sistema oficial de gestão</div>
       </div>
 
       <script>

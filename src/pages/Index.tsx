@@ -320,8 +320,8 @@ export default function Index() {
           </h3>
           <p className="mt-1 text-sm text-gray-500 max-w-md leading-relaxed">
             {busca
-              ? `A consulta ao schema imob não localizou imóveis com o termo "${busca}". Verifique o código (ex: 51002, 51120, 51090) ou limpe os filtros.`
-              : 'Os registros da tabela imob.property isolados por RLS da família não retornaram imóveis cadastrados ou sua sessão precisa ser renovada.'}
+              ? `Não encontramos imóveis com o termo "${busca}".`
+              : 'Nenhum imóvel encontrado para a sua família. Sua sessão pode ter expirado — entre novamente.'}
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3 justify-center">

@@ -63,7 +63,7 @@ export default function Layout() {
     if (path.startsWith('/imovel/') && path.endsWith('/documento-principal'))
       return 'Documento Principal'
     if (path.startsWith('/imovel/')) return 'Detalhes do Imóvel'
-    if (path === '/contas') return 'Gestão de Contas & Subledger'
+    if (path === '/contas') return 'Contas e Extratos Bancários'
     if (path === '/documentos') return 'Documentos'
     if (path === '/documento/novo') return 'Vincular Documento'
     return 'MFO Imob'
@@ -119,7 +119,7 @@ export default function Layout() {
         <div className="mx-4 mt-4 rounded-lg bg-black/20 p-3 border border-white/10 text-xs">
           <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-1">
             <ShieldCheck className="h-4 w-4" />
-            <span>RLS Supabase • Isolamento</span>
+            <span>Acesso restrito à família</span>
           </div>
           <p className="text-gray-100 font-medium truncate" title={usuario?.familia_nome}>
             {usuario?.familia_nome || 'Família BNI'}
@@ -161,7 +161,7 @@ export default function Layout() {
             }
           >
             <Landmark className="h-5 w-5 shrink-0" />
-            <span>Contas & Subledger</span>
+            <span>Contas e Extratos</span>
           </NavLink>
 
           <NavLink
@@ -233,7 +233,17 @@ export default function Layout() {
                 </DropdownMenuLabel>
                 <div className="px-2 py-1.5 text-xs">
                   <div className="font-semibold text-gray-800">{usuario?.nome}</div>
-                  <div className="text-gray-500">{usuario?.cargo}</div>
+                  <div className="text-gray-500">
+                    {usuario?.cargo === 'admin'
+                      ? 'Administrador'
+                      : usuario?.cargo === 'operador'
+                        ? 'Operador'
+                        : usuario?.cargo === 'socio'
+                          ? 'Sócio'
+                          : usuario?.cargo === 'contador'
+                            ? 'Contador'
+                            : usuario?.cargo}
+                  </div>
                   <div className="mt-1 text-[11px] text-[#0052cc] font-medium">
                     {usuario?.familia_nome}
                   </div>

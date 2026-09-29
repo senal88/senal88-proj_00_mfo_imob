@@ -146,7 +146,7 @@ export default function DocumentoNovo() {
       novosErros.docType = 'Selecione o tipo de documento.'
     }
     if (!arquivo) {
-      novosErros.arquivo = 'Selecione um arquivo para enviar ao Paperless.'
+      novosErros.arquivo = 'Selecione um arquivo para enviar ao acervo digital.'
     }
     setErros(novosErros)
     return Object.keys(novosErros).length === 0
@@ -178,7 +178,7 @@ export default function DocumentoNovo() {
           'Nova versão vinculada com sucesso! O documento anterior foi mantido no histórico.',
         )
       } else {
-        toast.success('Documento enviado ao Paperless e catalogado com sucesso!')
+        toast.success('Documento enviado ao acervo digital com sucesso!')
       }
 
       if (preselectedImovelId) {
@@ -247,7 +247,7 @@ export default function DocumentoNovo() {
                   : 'Vincular Documento ao Imóvel'}
               </CardTitle>
               <CardDescription className="text-xs text-gray-500 mt-0.5">
-                Envio via ponte server-side ao Paperless • Metadados catalogados no Supabase
+                Envio seguro para o acervo digital • Metadados registrados no sistema
               </CardDescription>
             </div>
           </div>
@@ -307,7 +307,7 @@ export default function DocumentoNovo() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-bold text-gray-700">
-                  Arquivo do Documento (Paperless) <span className="text-red-500">*</span>
+                  Arquivo do Documento <span className="text-red-500">*</span>
                 </Label>
                 <span className="text-[11px] text-gray-400 font-medium">Limite: 20 MB</span>
               </div>
@@ -519,7 +519,7 @@ export default function DocumentoNovo() {
                 disabled={loading}
                 className="bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white px-6 font-semibold"
               >
-                {loading ? 'Enviando ao Paperless...' : 'Vincular Documento'}
+                {loading ? 'Enviando...' : 'Vincular Documento'}
               </Button>
             </div>
           </form>

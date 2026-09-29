@@ -222,7 +222,7 @@ export default function ImovelDetalhes() {
             className="border-blue-200 text-[#0052cc] hover:bg-blue-50 flex items-center gap-1.5"
           >
             <Receipt className="h-4 w-4 text-[#0052cc]" />
-            <span>Ver Subledger / Contas</span>
+            <span>Ver Contas e Extratos</span>
           </Button>
 
           <Button
@@ -355,7 +355,7 @@ export default function ImovelDetalhes() {
                     </span>
                   </div>
                   <CardDescription className="text-xs text-gray-500 mt-1">
-                    Vínculo contratual ativo com garantia e cobrança recorrente no subledger
+                    Vínculo contratual ativo com garantia e cobrança recorrente na conta
                   </CardDescription>
                 </div>
 
@@ -436,7 +436,7 @@ export default function ImovelDetalhes() {
                       onClick={() => navigate('/contas')}
                       className="text-xs text-[#0052cc] hover:underline font-semibold"
                     >
-                      Ver no Subledger &rarr;
+                      Ver nas Contas &rarr;
                     </button>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -663,8 +663,7 @@ export default function ImovelDetalhes() {
                     {/* Botão Gerar Termo de Reajuste */}
                     <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <span className="text-[11px] text-gray-500">
-                        Ao gerar o termo, o valor é registrado na tabela oficial{' '}
-                        <code>imob.lease_adjustment</code>.
+                        Ao gerar o termo, o valor é registrado no histórico oficial de reajustes.
                       </span>
 
                       <Button
@@ -687,7 +686,7 @@ export default function ImovelDetalhes() {
                             })
                             setTermoGeradoSucesso(true)
                             toast.success(
-                              `Termo de reajuste gravado com sucesso em imob.lease_adjustment! Novo aluguel: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(novoAluguel)}`,
+                              `Termo de reajuste registrado com sucesso! Novo aluguel: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(novoAluguel)}`,
                             )
                             carregarDados()
                           } catch (err: unknown) {
@@ -940,7 +939,7 @@ export default function ImovelDetalhes() {
                       )}
                     </div>
                     <div className="text-[11px] text-gray-400 mt-1 font-mono">
-                      Ref. Paperless: #{documentoPrincipal.paperless_id || '---'}
+                      Código no acervo: #{documentoPrincipal.paperless_id || '---'}
                     </div>
                   </div>
                 </div>
@@ -1001,7 +1000,7 @@ export default function ImovelDetalhes() {
                           rel="noopener noreferrer"
                           className="text-[11px] text-[#2C4A6E] hover:underline font-semibold shrink-0"
                         >
-                          Ver no Paperless
+                          Ver documento
                         </a>
                       </div>
                     ))}
@@ -1040,7 +1039,7 @@ export default function ImovelDetalhes() {
                 Todos os Documentos do Imóvel ({documentos.length})
               </CardTitle>
               <CardDescription className="text-xs text-gray-500">
-                Dossiê completo guardado no Paperless com metadados no Supabase
+                Dossiê completo arquivado no acervo digital
               </CardDescription>
             </div>
             <Button
@@ -1171,7 +1170,7 @@ export default function ImovelDetalhes() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-semibold text-[#2C4A6E] hover:underline px-2.5 py-1.5 rounded-md hover:bg-blue-50"
-                        title="Abrir documento no Paperless"
+                        title="Abrir documento"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         <span>Abrir documento</span>

@@ -87,8 +87,7 @@ export default function Documentos() {
             Documentos dos Imóveis
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Dossiê digital via Paperless • {usuario?.familia_nome || 'Família BNI'} •{' '}
-            {documentos.length}{' '}
+            Dossiê digital • {usuario?.familia_nome || 'Família BNI'} • {documentos.length}{' '}
             {documentos.length === 1 ? 'arquivo catalogado' : 'arquivos catalogados'}
           </p>
         </div>
@@ -179,7 +178,7 @@ export default function Documentos() {
                       <th className="py-3.5 px-4">Imóvel vinculado</th>
                       <th className="py-3.5 px-4">Data do doc.</th>
                       <th className="py-3.5 px-4">Status / Evidência</th>
-                      <th className="py-3.5 px-6 text-right">Paperless</th>
+                      <th className="py-3.5 px-6 text-right">Arquivo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -268,7 +267,7 @@ export default function Documentos() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 rounded-md bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white px-3 py-1.5 text-xs font-semibold shadow-xs transition-colors"
-                              title="Abrir arquivo guardado no Paperless"
+                              title="Abrir arquivo"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                               <span>Abrir documento</span>

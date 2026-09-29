@@ -208,7 +208,7 @@ export default function DocumentoPrincipal() {
                   )}
 
                   <div className="text-[11px] text-gray-400 font-mono pt-1">
-                    Paperless ID: #{documento.paperless_id || '---'} • Hash:{' '}
+                    Código no acervo: #{documento.paperless_id || '---'} • Hash:{' '}
                     {documento.sha256 ? `${documento.sha256.substring(0, 16)}...` : '---'}
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function DocumentoPrincipal() {
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#2C4A6E] hover:bg-[#1E3A5F] text-white py-3 px-4 font-semibold text-sm shadow-xs transition-colors"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  <span>Abrir documento no Paperless</span>
+                  <span>Abrir documento</span>
                 </a>
 
                 {/* Botão "Substituir documento" com supersedes_id */}
@@ -285,7 +285,7 @@ export default function DocumentoPrincipal() {
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#2C4A6E] hover:underline shrink-0"
                         >
                           <ExternalLink className="h-3 w-3" />
-                          <span>Ver no Paperless</span>
+                          <span>Ver documento</span>
                         </a>
                       </div>
                     ))}
